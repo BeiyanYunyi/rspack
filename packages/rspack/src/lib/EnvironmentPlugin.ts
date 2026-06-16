@@ -8,12 +8,8 @@
  * https://github.com/webpack/webpack/blob/main/LICENSE
  */
 
-import { DefinePlugin } from '../builtin-plugin';
 import type { Compiler } from '../Compiler';
 import WebpackError from './WebpackError';
-
-// Waiting to adapt > import("./DefinePlugin").CodeValue
-type CodeValue = any;
 
 class EnvironmentPlugin {
   keys: string[];
@@ -42,7 +38,7 @@ class EnvironmentPlugin {
    * @returns
    */
   apply(compiler: Compiler) {
-    const definitions: Record<string, CodeValue> = {};
+    const definitions = compiler.__internal__get_environment();
     for (const key of this.keys) {
       const value =
         process.env[key] !== undefined
@@ -54,7 +50,9 @@ class EnvironmentPlugin {
           'EnvironmentPlugin',
           (compilation) => {
             const error = new WebpackError(
-              `EnvironmentPlugin - ${key} environment variable is undefined.\n\nYou can pass an object with default values to suppress this warning.\nSee https://rspack.rs/plugins/webpack/environment-plugin for example.`,
+              `EnvironmentPlugin - ${key} environment variable is undefined.\n\n` +
+                'You can pass an object with default values to suppress this warning.\n' +
+                'See https://rspack.rs/plugins/webpack/environment-plugin for example.',
             );
 
             error.name = 'EnvVariableNotDefinedError';
@@ -63,10 +61,12 @@ class EnvironmentPlugin {
         );
       }
 
-      definitions[`process.env.${key}`] =
+      // Env values are string data; convert them to code-string literals
+      // (matching webpack's EnvironmentPlugin) so DefinePlugin emits them as
+      // string literals. `undefined` becomes the `undefined` identifier.
+      definitions[key] =
         value === undefined ? 'undefined' : JSON.stringify(value);
     }
-    new DefinePlugin(definitions).apply(compiler);
   }
 }
 

@@ -80,11 +80,14 @@ pub fn code_to_string<'a>(
         .iter()
         .filter_map(|(key, value)| {
           if obj_keys.is_none_or(|keys| keys.iter().any(|prop| prop.id.as_str() == key)) {
-            Some(format!(
-              "{}:{}",
-              json!(key),
-              code_to_string(value, None, None)
-            ))
+            // Emit `__proto__` as a computed key so it becomes an own property
+            // instead of setting the prototype (matches webpack's `stringifyObj`).
+            let key_str = if key == "__proto__" {
+              r#"["__proto__"]"#.to_string()
+            } else {
+              json!(key).to_string()
+            };
+            Some(format!("{key_str}:{}", code_to_string(value, None, None)))
           } else {
             None
           }
