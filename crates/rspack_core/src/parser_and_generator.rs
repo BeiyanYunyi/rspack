@@ -37,6 +37,7 @@ pub struct ParseContext<'a> {
   pub loaders: &'a [BoxLoader],
   pub resource_data: &'a ResourceData,
   pub compiler_options: &'a CompilerOptions,
+  pub define_plugin_definitions: Option<&'a FxHashMap<String, serde_json::Value>>,
   pub additional_data: Option<AdditionalData>,
   pub factory_meta: Option<&'a FactoryMeta>,
   pub parse_meta: ParseMeta,

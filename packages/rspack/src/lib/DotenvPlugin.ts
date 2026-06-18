@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import type { Compiler } from '../Compiler';
+import { EnvironmentPlugin } from './EnvironmentPlugin';
 
 type Prefix = string[];
 type Env = Record<string, string>;
@@ -171,14 +172,16 @@ class DotenvPlugin {
         };
     const env = this.getEnv(prefixes, parsed);
 
-    // Env values are string data; convert them to code-string literals (matching
-    // webpack's DotenvPlugin) so DefinePlugin emits them as string literals. The
-    // surrounding `process.env` / `import.meta.env` object is serialized by
-    // DefinePlugin itself (Rust side), so we only stringify the leaf values here.
-    const definitions = compiler.__internal__get_environment();
-    for (const [key, value] of Object.entries(env || {})) {
-      definitions[key] = JSON.stringify(value);
-    }
+    // Expose each resolved variable as both `process.env.KEY` and
+    // `import.meta.env.KEY` by delegating to `EnvironmentPlugin`, which is the
+    // shared per-key DefinePlugin wrapper for env variables. `env` is passed as
+    // the default-values map: `EnvironmentPlugin` still prefers an actual
+    // `process.env[key]` when present (matching `getEnv`'s "process.env wins"
+    // rule) and otherwise falls back to the resolved (expanded) value. The
+    // merging of these per-key defines into the whole `import.meta.env` object
+    // is handled by ImportMetaPlugin, so no compiler-internal env accumulator is
+    // touched here.
+    new EnvironmentPlugin(env).apply(compiler);
 
     compiler.hooks.compilation.tap(PLUGIN_NAME, (compilation) => {
       compilation.fileDependencies.addAll(fileDependencies);

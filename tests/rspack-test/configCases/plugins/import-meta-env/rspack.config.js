@@ -18,6 +18,7 @@ module.exports = {
     // Test 4: DefinePlugin
     new DefinePlugin({
       'import.meta.env.CUSTOM_VAR': JSON.stringify('custom_value'),
+      'import.meta.env.ONLY_IMPORT_META': JSON.stringify('only_import_meta'),
     }),
   ],
 };

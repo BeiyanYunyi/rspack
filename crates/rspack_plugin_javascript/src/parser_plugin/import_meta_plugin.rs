@@ -6,12 +6,16 @@ use rspack_core::{
 };
 use rspack_error::{Error, Severity};
 use rspack_util::SpanExt;
+use rustc_hash::FxHashSet;
 use swc_experimental_ecma_ast::{
   CallExpr, Expr, GetSpan, MemberExpr, MemberProp, MetaPropKind, Span, UnaryExpr,
 };
 use url::Url;
 
-use super::JavascriptParserPlugin;
+use super::{
+  JavascriptParserPlugin,
+  define_plugin::{IMPORT_META_ENV_VALUE_DEP_KEY, utils::code_to_string},
+};
 use crate::{
   dependency::{
     IMPORT_META_RSC_BINDING, ImportMetaResolveContextDependency, ImportMetaResolveDependency,
@@ -23,6 +27,79 @@ use crate::{
     RootName, context_reg_exp, create_context_dependency, create_traceable_error, expr_name,
   },
 };
+
+const IMPORT_META_ENV: &str = "import.meta.env";
+const IMPORT_META_ENV_PREFIX: &str = "import.meta.env.";
+
+#[derive(Default)]
+struct ImportMetaEnvDefinitions {
+  stringify: String,
+  keys: FxHashSet<String>,
+}
+
+fn import_meta_env_value(definitions: &rustc_hash::FxHashMap<String, serde_json::Value>) -> String {
+  let mut pairs = definitions
+    .iter()
+    .filter_map(|(key, value)| {
+      key
+        .strip_prefix(IMPORT_META_ENV_PREFIX)
+        .map(|env_key| (env_key, value.to_string()))
+    })
+    .collect::<Vec<_>>();
+  pairs.sort_unstable_by(|a, b| a.0.cmp(b.0));
+  pairs
+    .into_iter()
+    .map(|(key, value)| format!("{key}:{value}"))
+    .collect::<Vec<_>>()
+    .join(",")
+}
+
+fn collect_import_meta_env_definitions(parser: &JavascriptParser) -> ImportMetaEnvDefinitions {
+  let Some(definitions) = parser.define_plugin_definitions else {
+    return ImportMetaEnvDefinitions {
+      stringify: "{}".to_string(),
+      keys: Default::default(),
+    };
+  };
+
+  let mut pairs = definitions
+    .iter()
+    .filter_map(|(key, value)| {
+      key.strip_prefix(IMPORT_META_ENV_PREFIX).map(|env_key| {
+        (
+          env_key.to_string(),
+          format!(
+            "{}:{}",
+            rspack_util::json_stringify_str(env_key),
+            code_to_string(value, None, None)
+          ),
+        )
+      })
+    })
+    .collect::<Vec<_>>();
+  pairs.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+
+  let mut keys = FxHashSet::default();
+  let mut entries = Vec::with_capacity(pairs.len());
+  for (key, entry) in pairs {
+    keys.insert(key);
+    entries.push(entry);
+  }
+
+  ImportMetaEnvDefinitions {
+    stringify: format!("{{{}}}", entries.join(",")),
+    keys,
+  }
+}
+
+fn add_import_meta_env_value_dependency(parser: &mut JavascriptParser) {
+  if let Some(definitions) = parser.define_plugin_definitions {
+    parser.build_info.value_dependencies.insert(
+      IMPORT_META_ENV_VALUE_DEP_KEY.to_string(),
+      import_meta_env_value(definitions),
+    );
+  }
+}
 
 fn create_import_meta_resolve_context_dependency(
   parser: &mut JavascriptParser,
@@ -209,6 +286,8 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for ImportMetaPlugin {
     let mut evaluated = None;
     if for_name == expr_name::IMPORT_META {
       evaluated = Some("object".to_string());
+    } else if for_name == IMPORT_META_ENV {
+      evaluated = Some("object".to_string());
     } else if for_name == expr_name::IMPORT_META_URL {
       evaluated = Some("string".to_string());
     } else if parser.javascript_options.import_meta_resolve == Some(true)
@@ -247,6 +326,12 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for ImportMetaPlugin {
   ) -> Option<eval::BasicEvaluatedExpression<'p>> {
     if for_name == expr_name::IMPORT_META_VERSION {
       Some(eval::evaluate_to_number(5_f64, start, end))
+    } else if for_name == IMPORT_META_ENV {
+      add_import_meta_env_value_dependency(parser);
+      let mut evaluated = BasicEvaluatedExpression::with_range(start, end);
+      evaluated.set_truthy();
+      evaluated.set_side_effects(false);
+      Some(evaluated)
     } else if for_name == expr_name::IMPORT_META_URL {
       Some(eval::evaluate_to_string(
         self.import_meta_url(parser),
@@ -321,6 +406,14 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for ImportMetaPlugin {
   ) -> Option<bool> {
     match for_name {
       expr_name::IMPORT_META => {
+        parser.add_presentational_dependency(Box::new(ConstDependency::new(
+          unary_expr.span().into(),
+          "'object'".into(),
+        )));
+        Some(true)
+      }
+      IMPORT_META_ENV => {
+        add_import_meta_env_value_dependency(parser);
         parser.add_presentational_dependency(Box::new(ConstDependency::new(
           unary_expr.span().into(),
           "'object'".into(),
@@ -402,6 +495,12 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for ImportMetaPlugin {
             content.push(format!(r#"webpack: {}"#, self.import_meta_version()));
           } else if prop.id == "main" {
             content.push(format!("main: {}", self.import_meta_main(parser)));
+          } else if prop.id == "env" {
+            add_import_meta_env_value_dependency(parser);
+            content.push(format!(
+              "env: {}",
+              collect_import_meta_env_definitions(parser).stringify
+            ));
           } else if prop.id == "rspackRsc" && is_rsc_layer(parser) {
             content.push(format!(
               "rspackRsc: {}",
@@ -461,6 +560,13 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for ImportMetaPlugin {
         format!("'{}'", self.import_meta_url(parser)).into(),
       )));
       Some(true)
+    } else if for_name == IMPORT_META_ENV {
+      add_import_meta_env_value_dependency(parser);
+      parser.add_presentational_dependency(Box::new(ConstDependency::new(
+        member_expr.span().into(),
+        collect_import_meta_env_definitions(parser).stringify.into(),
+      )));
+      Some(true)
     } else if for_name == expr_name::IMPORT_META_VERSION {
       // import.meta.webpack
       parser.add_presentational_dependency(Box::new(ConstDependency::new(
@@ -482,6 +588,37 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for ImportMetaPlugin {
     } else {
       None
     }
+  }
+
+  fn member_chain(
+    &self,
+    parser: &mut JavascriptParser<'p>,
+    expr: &MemberExpr,
+    for_name: &str,
+    members: &[swc_atoms::Atom],
+    _members_optionals: &[bool],
+    _member_ranges: &[Span],
+  ) -> Option<bool> {
+    if for_name != expr_name::IMPORT_META || !members.first().is_some_and(|member| member == "env")
+    {
+      return None;
+    }
+
+    let Some(name) = members.get(1) else {
+      return None;
+    };
+
+    add_import_meta_env_value_dependency(parser);
+    let env = collect_import_meta_env_definitions(parser);
+    if env.keys.contains(name.as_str()) {
+      return None;
+    }
+
+    parser.add_presentational_dependency(Box::new(ConstDependency::new(
+      expr.span().into(),
+      "undefined".into(),
+    )));
+    Some(true)
   }
 
   fn call(
@@ -517,6 +654,25 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for ImportMetaPlugin {
               MemberExpressionInfo::Expression(res) => Some(res),
               _ => None,
             });
+
+          if let Some(members) = &members
+            && members
+              .members
+              .first()
+              .is_some_and(|member| member == "env")
+          {
+            add_import_meta_env_value_dependency(parser);
+            if let Some(name) = members.members.get(1) {
+              let env = collect_import_meta_env_definitions(parser);
+              if !env.keys.contains(name.as_str()) {
+                parser.add_presentational_dependency(Box::new(ConstDependency::new(
+                  expr.span().into(),
+                  "undefined".into(),
+                )));
+              }
+            }
+            return Some(true);
+          }
 
           let dep = if let Some(members) = members {
             if members.members.get(1).is_some()

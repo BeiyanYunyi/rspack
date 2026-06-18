@@ -392,6 +392,7 @@ pub struct JavascriptParser<'parser> {
   pub build_info: &'parser mut BuildInfo,
   pub resource_data: &'parser ResourceData,
   pub(crate) compiler_options: &'parser CompilerOptions,
+  pub(crate) define_plugin_definitions: Option<&'parser FxHashMap<String, serde_json::Value>>,
   pub(crate) javascript_options: &'parser JavascriptParserOptions,
   pub parser_runtime_requirements: &'parser ParserRuntimeRequirementsData,
   pub module_type: &'parser ModuleType,
@@ -445,6 +446,7 @@ impl<'parser> JavascriptParser<'parser> {
     semicolons: &'parser mut FxHashSet<u32>,
     parser_plugins: &'parser mut Vec<BoxJavascriptParserPlugin>,
     parse_meta: ParseMeta,
+    define_plugin_definitions: Option<&'parser FxHashMap<String, serde_json::Value>>,
     parser_runtime_requirements: &'parser ParserRuntimeRequirementsData,
   ) -> Self {
     let warning_diagnostics: Vec<Diagnostic> = Vec::new();
@@ -592,6 +594,7 @@ impl<'parser> JavascriptParser<'parser> {
       build_meta,
       build_info,
       compiler_options,
+      define_plugin_definitions,
       module_type,
       module_layer,
       parser_exports_state,

@@ -9,6 +9,7 @@
  */
 
 import type { Compiler } from '../Compiler';
+import { DefinePlugin } from '../builtin-plugin';
 import WebpackError from './WebpackError';
 
 class EnvironmentPlugin {
@@ -38,12 +39,17 @@ class EnvironmentPlugin {
    * @returns
    */
   apply(compiler: Compiler) {
-    const definitions = compiler.__internal__get_environment();
+    const definitions: Record<string, string> = Object.create(null);
     for (const key of this.keys) {
-      const value =
-        process.env[key] !== undefined
-          ? process.env[key]
-          : this.defaultValues[key];
+      // Use `hasOwnProperty` rather than `process.env[key] !== undefined` so that
+      // names inherited from `Object.prototype` (e.g. `__proto__`, `constructor`)
+      // are not mistaken for defined env variables — `process.env.__proto__`
+      // returns the prototype object, not an env value. For real env variables
+      // (which are always strings) this is equivalent to the `!== undefined`
+      // check, including the empty-string case.
+      const value = Object.prototype.hasOwnProperty.call(process.env, key)
+        ? process.env[key]
+        : this.defaultValues[key];
 
       if (value === undefined) {
         compiler.hooks.thisCompilation.tap(
@@ -61,12 +67,20 @@ class EnvironmentPlugin {
         );
       }
 
-      // Env values are string data; convert them to code-string literals
-      // (matching webpack's EnvironmentPlugin) so DefinePlugin emits them as
-      // string literals. `undefined` becomes the `undefined` identifier.
-      definitions[key] =
+      // Expose each variable as both `process.env.KEY` and `import.meta.env.KEY`.
+      // EnvironmentPlugin is just a thin DefinePlugin wrapper (matching webpack) —
+      // the merging of these per-key defines into the whole `import.meta.env`
+      // object is handled by ImportMetaPlugin. Env values are string data;
+      // `JSON.stringify` turns them into code-string literals (DefinePlugin emits
+      // string values verbatim as code fragments). `undefined` becomes the
+      // `undefined` identifier. `DotenvPlugin` reuses this by passing its
+      // resolved env as the default-values map.
+      const defValue =
         value === undefined ? 'undefined' : JSON.stringify(value);
+      definitions[`process.env.${key}`] = defValue;
+      definitions[`import.meta.env.${key}`] = defValue;
     }
+    new DefinePlugin(definitions).apply(compiler);
   }
 }
 

@@ -1,13 +1,6 @@
 import { BuiltinPluginName } from '@rspack/binding';
 
 import { create } from './base';
-import { Compiler } from '../Compiler';
-
-const PROCESS_ENV = 'process.env' as const;
-const IMPORT_META_ENV = 'import.meta.env' as const;
-
-const PROCESS_ENV_PREFIX = `${PROCESS_ENV}.` as const;
-const IMPORT_META_ENV_PREFIX = `${IMPORT_META_ENV}.` as const;
 
 export type DefinePluginOptions = Record<string, CodeValue>;
 export const DefinePlugin = create(
@@ -16,36 +9,10 @@ export const DefinePlugin = create(
     const supportsBigIntLiteral =
       this.options.output.environment?.bigIntLiteral ?? false;
 
-    collectEnvDefinitions(this, define);
-
     return normalizeValue(define, supportsBigIntLiteral);
   },
   'compilation',
 );
-
-const collectEnvDefinitions = (
-  compiler: Compiler,
-  define: DefinePluginOptions,
-): DefinePluginOptions => {
-  const definitions = compiler.__internal__get_environment();
-
-  function collectEnv(prefix: string, key: string, value: CodeValue) {
-    const rawKey = key.slice(prefix.length);
-    definitions[rawKey] = value;
-  }
-
-  for (const [key, value] of Object.entries(define)) {
-    if (key === PROCESS_ENV || key === IMPORT_META_ENV) {
-      Object.assign(definitions, value);
-    } else if (key.startsWith(PROCESS_ENV_PREFIX)) {
-      collectEnv(PROCESS_ENV_PREFIX, key, value);
-    } else if (key.startsWith(IMPORT_META_ENV_PREFIX)) {
-      collectEnv(IMPORT_META_ENV_PREFIX, key, value);
-    }
-  }
-
-  return definitions;
-};
 
 const normalizeValue = (
   define: DefinePluginOptions,

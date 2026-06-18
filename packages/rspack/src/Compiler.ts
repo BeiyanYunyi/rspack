@@ -16,7 +16,6 @@ import type { Source } from 'webpack-sources';
 import {
   createRsdoctorPluginHooksRegisters,
   createRuntimePluginHooksRegisters,
-  DefinePluginOptions,
   JsLoaderRspackPlugin,
 } from './builtin-plugin';
 import { canInherentFromParent } from './builtin-plugin/base';
@@ -145,7 +144,6 @@ class Compiler {
   #compilationParams?: CompilationParams;
 
   #builtinPlugins: binding.BuiltinPlugin[];
-  #environmentDefinitions: DefinePluginOptions = Object.create(null);
 
   #moduleExecutionResultsMap: Map<number, any>;
 
@@ -216,7 +214,6 @@ class Compiler {
     this.#initial = true;
 
     this.#builtinPlugins = [];
-    this.#environmentDefinitions = Object.create(null);
 
     this.#nonSkippableRegisters = [];
     this.#moduleExecutionResultsMap = new Map();
@@ -1154,14 +1151,6 @@ class Compiler {
    */
   __internal__registerBuiltinPlugin(plugin: binding.BuiltinPlugin) {
     this.#builtinPlugins.push(plugin);
-  }
-
-  /**
-   * Note: This is not a webpack public API, maybe removed in future.
-   * @internal
-   */
-  __internal__get_environment(): DefinePluginOptions {
-    return this.#environmentDefinitions;
   }
 
   /**

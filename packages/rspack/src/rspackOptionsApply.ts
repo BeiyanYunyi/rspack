@@ -75,7 +75,6 @@ import { getTargetProperties, getTargetsProperties } from './config/target';
 import MemoryCachePlugin from './lib/cache/MemoryCachePlugin';
 import { DotenvPlugin } from './lib/DotenvPlugin';
 import EntryOptionPlugin from './lib/EntryOptionPlugin';
-import { registerEnvDefinitions } from './lib/envPlugin';
 import IgnoreWarningsPlugin from './lib/IgnoreWarningsPlugin';
 import { DefaultStatsFactoryPlugin } from './stats/DefaultStatsFactoryPlugin';
 import { DefaultStatsPresetPlugin } from './stats/DefaultStatsPresetPlugin';
@@ -402,23 +401,15 @@ export class RspackOptionsApply {
       }
     }
     if (options.optimization.nodeEnv) {
-      registerEnvDefinitions(compiler, {
-        NODE_ENV: JSON.stringify(options.optimization.nodeEnv),
-      });
-    }
-    // Apply all registered environment definitions (EnvironmentPlugin, DotenvPlugin,
-    // user `import.meta.env.*` / `process.env.*` DefinePlugin keys, and NODE_ENV)
-    // via a single DefinePlugin that only receives the accumulated env object as
-    // `import.meta.env`. The Rust-side DefinePlugin serializes the object (so
-    // `typeof import.meta.env`/destructuring/member access work, each
-    // `import.meta.env.KEY` leaf is inlined and unused fields are tree-shaken
-    // away) and mirrors each leaf onto `process.env.KEY` per-key — without
-    // registering a whole-object `process.env` define, so `process.env` stays the
-    // runtime object and user `process.env.*` defines, mutation and variable
-    // references keep working. No manual serialization or per-key expansion here.
-    const env = compiler.__internal__get_environment();
-    if (Object.keys(env).length > 0) {
-      new DefinePlugin({ 'import.meta.env': env }).apply(compiler);
+      // Expose `NODE_ENV` (derived from mode) as both `process.env.NODE_ENV` and
+      // `import.meta.env.NODE_ENV`. Like EnvironmentPlugin / DotenvPlugin this is
+      // just a per-key DefinePlugin; ImportMetaPlugin collects the
+      // `import.meta.env.*` definitions from the compilation.
+      const nodeEnv = JSON.stringify(options.optimization.nodeEnv);
+      new DefinePlugin({
+        'process.env.NODE_ENV': nodeEnv,
+        'import.meta.env.NODE_ENV': nodeEnv,
+      }).apply(compiler);
     }
     const { minimize, minimizer } = options.optimization;
     if (minimize && minimizer) {

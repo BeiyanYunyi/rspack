@@ -18,6 +18,12 @@ it("should expose variables from DefinePlugin", () => {
 	expect(env.CUSTOM_VAR).toBe("custom_value");
 });
 
+it("should not mirror import.meta.env definitions to process.env", () => {
+	const env = import.meta.env;
+	expect(env.ONLY_IMPORT_META).toBe("only_import_meta");
+	expect(process.env.ONLY_IMPORT_META).not.toBe("only_import_meta");
+});
+
 it("should support typeof import.meta.env", () => {
 	expect(typeof import.meta.env).toBe("object");
 });

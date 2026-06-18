@@ -1,5 +1,5 @@
 mod parser;
-mod utils;
+pub(crate) mod utils;
 mod walk_data;
 
 use std::sync::Arc;
@@ -17,7 +17,9 @@ use serde_json::Value;
 use self::walk_data::WalkData;
 use crate::parser_and_generator::JavaScriptParserAndGenerator;
 
-const VALUE_DEP_PREFIX: &str = "rspack/DefinePlugin ";
+pub(crate) const VALUE_DEP_PREFIX: &str = "rspack/DefinePlugin ";
+pub(crate) const IMPORT_META_ENV_VALUE_DEP_KEY: &str = "rspack/DefinePlugin import.meta.env.*";
+const IMPORT_META_ENV_PREFIX: &str = "import.meta.env.";
 
 #[derive(Debug)]
 struct ConflictingValuesError(String, String, String);
@@ -38,12 +40,30 @@ pub type DefineValue = FxHashMap<String, Value>;
 #[derive(Debug)]
 pub struct DefinePlugin {
   walk_data: Arc<WalkData>,
+  definitions: Arc<DefineValue>,
 }
 
 impl DefinePlugin {
   pub fn new(definitions: DefineValue) -> Self {
-    Self::new_inner(Arc::new(WalkData::new(&definitions)))
+    Self::new_inner(Arc::new(WalkData::new(&definitions)), Arc::new(definitions))
   }
+}
+
+fn import_meta_env_value(definitions: &DefineValue) -> String {
+  let mut pairs = definitions
+    .iter()
+    .filter_map(|(key, value)| {
+      key
+        .strip_prefix(IMPORT_META_ENV_PREFIX)
+        .map(|env_key| (env_key, value.to_string()))
+    })
+    .collect::<Vec<_>>();
+  pairs.sort_unstable_by(|a, b| a.0.cmp(b.0));
+  pairs
+    .into_iter()
+    .map(|(key, value)| format!("{key}:{value}"))
+    .collect::<Vec<_>>()
+    .join(",")
 }
 
 #[plugin_hook(CompilerCompilation for DefinePlugin, tracing=false)]
@@ -53,6 +73,16 @@ async fn compilation(
   _params: &mut CompilationParams,
 ) -> Result<()> {
   compilation.extend_diagnostics(self.walk_data.diagnostics.clone());
+  compilation.define_plugin_definitions.extend(
+    self
+      .definitions
+      .iter()
+      .map(|(key, value)| (key.clone(), value.clone())),
+  );
+  compilation.value_cache_versions.insert(
+    IMPORT_META_ENV_VALUE_DEP_KEY.to_string(),
+    import_meta_env_value(&compilation.define_plugin_definitions),
+  );
   for (key, value) in self.walk_data.tiling_definitions.iter() {
     let cache_key = format!("{VALUE_DEP_PREFIX}{key}");
     if let Some(prev) = compilation.value_cache_versions.get(&cache_key)

@@ -46,6 +46,7 @@ pub struct BuildContext {
   pub compiler_id: CompilerId,
   pub compilation_id: CompilationId,
   pub compiler_options: Arc<CompilerOptions>,
+  pub define_plugin_definitions: Arc<HashMap<String, serde_json::Value>>,
   pub resolver_factory: Arc<ResolverFactory>,
   pub runtime_template: ModuleCodeTemplate,
   pub plugin_driver: SharedPluginDriver,

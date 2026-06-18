@@ -88,9 +88,7 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for DefineParserPlugin {
       self.recurse_typeof.store(false, Ordering::Release);
       return evaluated;
     }
-    if let Some(record) = self.walk_data.object_define_record.get(for_name)
-      && !record.destructuring_only
-    {
+    if self.walk_data.object_define_record.contains_key(for_name) {
       self.add_value_dependency(parser, for_name);
       return Some(evaluate_to_string(
         "object".to_string(),
@@ -121,7 +119,6 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for DefineParserPlugin {
       self.recurse.store(false, Ordering::Release);
       return evaluated;
     } else if let Some(record) = self.walk_data.object_define_record.get(for_name)
-      && !record.destructuring_only
       && let Some(on_evaluate_identifier) = &record.on_evaluate_identifier
     {
       self.add_value_dependency(parser, for_name);
@@ -141,9 +138,7 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for DefineParserPlugin {
     {
       self.add_value_dependency(parser, for_name);
       return on_typeof(record, parser, expr.span.real_lo(), expr.span.real_hi());
-    } else if let Some(record) = self.walk_data.object_define_record.get(for_name)
-      && !record.destructuring_only
-    {
+    } else if self.walk_data.object_define_record.contains_key(for_name) {
       self.add_value_dependency(parser, for_name);
       debug_assert!(!parser.in_short_hand);
       for dep in gen_const_dep(
