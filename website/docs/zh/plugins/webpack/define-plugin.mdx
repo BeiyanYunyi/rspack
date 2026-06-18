@@ -166,3 +166,60 @@ new rspack.DefinePlugin({
 ```
 
 这样生成的 `APP_INFO` 会是一个可直接使用的对象字面量。否则，像 `APP_INFO: { ... }` 这样的写法会被 `DefinePlugin` 当作嵌套定义配置递归处理，而不是按对象字面量注入到业务代码中。
+
+## `import.meta.env`
+
+Rspack 支持定义 `import.meta.env`，使环境变量可以在 ESM 源码中被访问。将其定义为一个整体对象，Rspack 会：
+
+- 将 `import.meta.env` 本身替换为对象字面量，因此 `typeof import.meta.env` 求值为 `'object'`，且 `import.meta.env` 为真值。
+- 将每次 `import.meta.env.KEY` 访问单独内联为对应的值，因此未被使用的 key 会被 tree-shaking 移除。
+- 对于 `import.meta.env.NOT_EXIST` 这类未知访问，让其解析为 `undefined`（假值）。
+
+```js title="rspack.config.mjs"
+export default {
+  plugins: [
+    new rspack.DefinePlugin({
+      'import.meta.env': {
+        MODE: JSON.stringify('production'),
+        API_URL: JSON.stringify('https://example.com'),
+      },
+    }),
+  ],
+};
+```
+
+```js title="src/index.js"
+console.log(typeof import.meta.env); // 'object'
+console.log(import.meta.env.MODE); // 'production'
+console.log(import.meta.env.NOT_EXIST); // undefined
+```
+
+通常你不需要手写这个 `DefinePlugin`。[`EnvironmentPlugin`](/plugins/webpack/environment-plugin)、内置的 [`dotenv`](/config/dotenv) 选项，以及用户 `DefinePlugin` 中的 `import.meta.env.*` / `process.env.*` 键，都会被收集到同一个累积的环境对象中，并自动以 `import.meta.env` 暴露。
+
+## `process.env`
+
+`process.env` 是按 key 处理的，而不是按整体对象替换，因此 `process.env` 本身仍是**运行时**对象 —— 你自己定义的 `process.env.*`、运行时修改，以及 `process.env` 引用都能正常工作，只有你定义的 key 会被内联。
+
+```js title="rspack.config.mjs"
+new rspack.DefinePlugin({
+  'process.env.NODE_ENV': JSON.stringify('production'),
+});
+```
+
+```js title="src/index.js"
+console.log(process.env.NODE_ENV); // 'production'
+console.log(process.env.CUSTOM); // 运行时从运行时的 process.env 解析
+```
+
+当环境对象被累积时（通过 [`EnvironmentPlugin`](/plugins/webpack/environment-plugin) / [`dotenv`](/config/dotenv) / `NODE_ENV`），它的每个 key 也会按 key 镜像到 `process.env.KEY`，因此同一个值可以同时通过 `import.meta.env.KEY` 和 `process.env.KEY` 访问 —— 而不会替换整个 `process.env` 对象。
+
+### 解构
+
+`process.env` 支持解构：当解构的每个 key 都是已定义的环境变量 key 时，解构源会被内联为仅含这些 key 的对象。
+
+```js title="src/index.js"
+const { NODE_ENV, MODE } = process.env;
+console.log(NODE_ENV, MODE);
+```
+
+如果解构的某个 key 不是已定义的环境变量 key，则该访问会回退到运行时的 `process.env`，因为运行时它可能确实持有该 key。

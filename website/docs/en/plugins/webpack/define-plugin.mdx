@@ -166,3 +166,60 @@ new rspack.DefinePlugin({
 ```
 
 This makes `APP_INFO` a usable object literal in the generated code. By contrast, `APP_INFO: { ... }` would be treated by `DefinePlugin` as a nested definition config and processed recursively, rather than being injected as an object literal into application code.
+
+## `import.meta.env`
+
+Rspack supports defining `import.meta.env` so that environment variables are reachable from ESM source code. Define it as a whole object and Rspack will:
+
+- Replace `import.meta.env` itself with the object literal, so `typeof import.meta.env` evaluates to `'object'` and `import.meta.env` is truthy.
+- Inline each `import.meta.env.KEY` access with its value individually, so unused keys are tree-shaken away.
+- Leave unknown accesses such as `import.meta.env.NOT_EXIST` to resolve to `undefined` (falsy).
+
+```js title="rspack.config.mjs"
+export default {
+  plugins: [
+    new rspack.DefinePlugin({
+      'import.meta.env': {
+        MODE: JSON.stringify('production'),
+        API_URL: JSON.stringify('https://example.com'),
+      },
+    }),
+  ],
+};
+```
+
+```js title="src/index.js"
+console.log(typeof import.meta.env); // 'object'
+console.log(import.meta.env.MODE); // 'production'
+console.log(import.meta.env.NOT_EXIST); // undefined
+```
+
+You usually do not write this `DefinePlugin` by hand. [`EnvironmentPlugin`](/plugins/webpack/environment-plugin), the built-in [`dotenv`](/config/dotenv) option, and any user `DefinePlugin` `import.meta.env.*` / `process.env.*` keys are all collected into one accumulated env object and exposed as `import.meta.env` automatically.
+
+## `process.env`
+
+`process.env` is handled per-key rather than as a whole object, so `process.env` itself stays the **runtime** object — your own `process.env.*` defines, runtime mutations, and `process.env` references keep working, and only the keys you define are inlined.
+
+```js title="rspack.config.mjs"
+new rspack.DefinePlugin({
+  'process.env.NODE_ENV': JSON.stringify('production'),
+});
+```
+
+```js title="src/index.js"
+console.log(process.env.NODE_ENV); // 'production'
+console.log(process.env.CUSTOM); // resolved from the runtime process.env at runtime
+```
+
+When the env object is accumulated (via [`EnvironmentPlugin`](/plugins/webpack/environment-plugin) / [`dotenv`](/config/dotenv) / `NODE_ENV`), each of its keys is also mirrored onto `process.env.KEY` per-key, so the same value is reachable from both `import.meta.env.KEY` and `process.env.KEY` — without replacing the whole `process.env` object.
+
+### Destructuring
+
+`process.env` destructuring is supported: when every destructured key is a defined env key, the destructuring source is inlined with only those keys.
+
+```js title="src/index.js"
+const { NODE_ENV, MODE } = process.env;
+console.log(NODE_ENV, MODE);
+```
+
+If any destructured key is not a defined env key, the access falls back to the runtime `process.env`, since it may legitimately hold that key at runtime.

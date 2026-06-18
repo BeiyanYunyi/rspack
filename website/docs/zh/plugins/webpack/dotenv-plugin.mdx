@@ -1,0 +1,58 @@
+---
+description: 'DotenvPlugin 从 .env 文件加载环境变量，并通过 import.meta.env 和 process.env 暴露给源码'
+---
+
+import { ApiMeta } from '@components/ApiMeta';
+
+# DotenvPlugin
+
+<ApiMeta addedVersion="2.1.0" />
+
+`DotenvPlugin` 从 `.env` 文件加载环境变量，并通过 [`import.meta.env`](/plugins/webpack/define-plugin#import-meta-env) 和 [`process.env`](/plugins/webpack/define-plugin#process-env) 暴露给你的源码。每个匹配到的变量会在编译时内联，因此未被使用的变量会被 tree-shaking 移除。
+
+它和 [`dotenv`](/config/dotenv) 配置项启用的是同一个插件 —— 当你需要以插件形式控制它时，可以直接使用：
+
+```js title="rspack.config.mjs"
+import { DotenvPlugin } from '@rspack/core';
+
+export default {
+  plugins: [new DotenvPlugin({ prefix: 'APP_' })],
+};
+```
+
+等价于：
+
+```js title="rspack.config.mjs"
+export default {
+  dotenv: { prefix: 'APP_' },
+};
+```
+
+## 选项
+
+- **类型：**
+
+```ts
+interface DotenvPluginOptions {
+  /**
+   * 加载 .env 文件的目录。可以是绝对路径；
+   * 设为 `false` 会禁用 .env 文件加载。
+   */
+  dir?: false | string;
+  /**
+   * 仅暴露以这些前缀开头的环境变量。
+   * 默认值为 'WEBPACK_'。
+   */
+  prefix?: string | string[];
+  /**
+   * .env 文件名的模板。可使用 [mode] 作为 rspack mode 的占位符。
+   */
+  template?: string[];
+}
+```
+
+`dir`、`prefix`、`template`、变量展开和优先级等完整说明见 [`dotenv`](/config/dotenv)。
+
+:::info
+环境变量的值都是字符串。Rspack 会自动把它们转换为字符串字面量，因此你不需要再用 `JSON.stringify` 包裹。
+:::

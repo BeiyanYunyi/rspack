@@ -58,6 +58,11 @@ const pluginSupportStatusList: PluginSupportStatus[] = [
     },
   },
   {
+    name: 'DotenvPlugin',
+    url: '/plugins/webpack/dotenv-plugin',
+    status: SupportStatus.FullySupported,
+  },
+  {
     name: 'DllPlugin',
     url: '/plugins/webpack/dll-plugin',
     status: SupportStatus.FullySupported,

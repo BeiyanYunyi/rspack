@@ -6,6 +6,7 @@
   "deterministic-module-ids-plugin",
   "dll-plugin",
   "dll-reference-plugin",
+  "dotenv-plugin",
   "electron-target-plugin",
   "enable-chunk-loading-plugin",
   "enable-library-plugin",

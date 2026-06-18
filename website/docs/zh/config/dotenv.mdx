@@ -1,0 +1,153 @@
+---
+description: '从 .env 文件加载环境变量，并通过 import.meta.env 和 process.env 暴露给源码'
+---
+
+import PropertyType from '@components/PropertyType';
+import { ApiMeta } from '@components/ApiMeta';
+
+# dotenv
+
+<ApiMeta addedVersion="2.1.0" />
+
+从 `.env` 文件加载环境变量，并通过 [`import.meta.env`](/plugins/webpack/define-plugin#import-meta-env) 和 [`process.env`](/plugins/webpack/define-plugin#process-env) 暴露给你的源码。
+
+- **类型：**
+
+```ts
+type Dotenv = boolean | DotenvPluginOptions;
+
+interface DotenvPluginOptions {
+  /**
+   * 加载 .env 文件的目录。可以是绝对路径；
+   * 设为 `false` 会禁用 .env 文件加载。
+   */
+  dir?: false | string;
+  /**
+   * 仅暴露以这些前缀开头的环境变量。
+   * 默认值为 'WEBPACK_'。
+   */
+  prefix?: string | string[];
+  /**
+   * .env 文件名的模板。可使用 [mode] 作为 rspack mode 的占位符。
+   */
+  template?: string[];
+}
+```
+
+- **默认值：** `false`
+
+## 用法
+
+设为 `true` 即可启用默认配置：
+
+```js title="rspack.config.mjs"
+export default {
+  dotenv: true,
+};
+```
+
+也可以传入一个选项对象：
+
+```js title="rspack.config.mjs"
+export default {
+  dotenv: {
+    prefix: 'APP_',
+    template: ['.env', '.env.[mode]'],
+  },
+};
+```
+
+启用后，Rspack 会从 [`context`](/config/context)（或设置了 [`dir`](#dir) 时从该目录）加载 `.env` 文件，将每个匹配到的变量同时暴露为 `import.meta.env.KEY` **和** `process.env.KEY`，并在编译时内联每次访问 —— 因此未被使用的变量会被 tree-shaking 移除。
+
+```js title="src/index.js"
+// .env: APP_API_URL=https://example.com
+console.log(import.meta.env.APP_API_URL); // 'https://example.com'
+console.log(process.env.APP_API_URL); // 'https://example.com'
+```
+
+:::info
+和 [`EnvironmentPlugin`](/plugins/webpack/environment-plugin) 一样，环境变量的值都是字符串。Rspack 会自动把它们转换为字符串字面量，因此你**不需要**再用 `JSON.stringify` 包裹。
+:::
+
+## dotenv.dir
+
+<PropertyType
+  type="false | string"
+  defaultValueList={[{ defaultValue: 'context' }]}
+/>
+
+加载 `.env` 文件的目录。可以是绝对路径。设为 `false` 可完全禁用 `.env` 文件加载（此时只会使用 `process.env`）。
+
+## dotenv.prefix
+
+<PropertyType
+  type="string | string[]"
+  defaultValueList={[{ defaultValue: "'WEBPACK_'" }]}
+/>
+
+仅暴露名称以给定前缀之一开头的环境变量。
+
+```js title="rspack.config.mjs"
+export default {
+  dotenv: {
+    prefix: 'APP_',
+  },
+};
+```
+
+使用数组可以匹配多个前缀：
+
+```js title="rspack.config.mjs"
+export default {
+  dotenv: {
+    prefix: ['APP_', 'PUBLIC_'],
+  },
+};
+```
+
+## dotenv.template
+
+<PropertyType
+  type="string[]"
+  defaultValueList={[
+    { defaultValue: "['.env', '.env.local', '.env.[mode]', '.env.[mode].local']" },
+  ]}
+/>
+
+`.env` 文件名的模板。可使用 `[mode]` 作为当前 rspack [`mode`](/config/mode) 的占位符（默认为 `development`）。文件按顺序加载，后加载的值会覆盖先前的值。
+
+```js title="rspack.config.mjs"
+export default {
+  mode: 'production',
+  dotenv: {
+    template: ['.env', '.env.[mode]'],
+  },
+};
+```
+
+当 `mode: 'production'` 时，会先加载 `.env`，再加载 `.env.production`。
+
+## 变量展开
+
+值可以通过 `$VAR` 或 `${VAR}` 语法引用其他变量。引用会根据 `process.env` 和已解析的 `.env` 值进行解析：
+
+```bash title=".env"
+API_HOST=127.0.0.1
+API_URL=http://${API_HOST}:8080
+```
+
+`import.meta.env.API_URL` 解析为 `http://127.0.0.1:8080`。
+
+:::tip
+已存在于 `process.env` 中的变量优先级高于从 `.env` 文件解析出的值。
+:::
+
+## 优先级
+
+环境定义会从多个来源合并。对同一个 key，后注册的会覆盖先注册的：
+
+1. 配置中应用的用户插件（例如 [`EnvironmentPlugin`](/plugins/webpack/environment-plugin)、带有 `import.meta.env.*` / `process.env.*` 键的用户 [`DefinePlugin`](/plugins/webpack/define-plugin)）。
+2. `dotenv`（本选项）。
+3. `NODE_ENV`，派生自 [`optimization.nodeEnv`](/config/optimization#optimizationnodeenv)（默认即 [`mode`](/config/mode)）。
+
+这些来源都会汇入同一个累积的环境对象，以 `import.meta.env` 暴露，并按 key 镜像到 `process.env.KEY`。替换语义见 [DefinePlugin — `import.meta.env`](/plugins/webpack/define-plugin#import-meta-env)。

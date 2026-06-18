@@ -179,6 +179,18 @@ if (
 
 具体的编译行为由 [`node.__dirname`](/config/node#node__dirname) 配置项控制，详见该配置文档。
 
+### import.meta.env
+
+向 ESM 源码暴露环境变量。`import.meta.env` 本身会被替换为对象字面量，因此 `typeof import.meta.env` 求值为 `'object'`，且 `import.meta.env` 为真值。每次 `import.meta.env.KEY` 访问会单独内联为对应的值，因此未被使用的 key 会被 tree-shaking 移除；`import.meta.env.NOT_EXIST` 这类未知访问会解析为 `undefined`（假值）。
+
+```js title=src/index.js
+console.log(typeof import.meta.env); // 'object'
+console.log(import.meta.env.NODE_ENV); // 'production'
+console.log(import.meta.env.NOT_EXIST); // undefined
+```
+
+这些变量收集自 [`EnvironmentPlugin`](/plugins/webpack/environment-plugin)、[`dotenv`](/config/dotenv) 配置项、用户 [`DefinePlugin`](/plugins/webpack/define-plugin) 中的 `import.meta.env.*` / `process.env.*` 键，以及 `NODE_ENV`（派生自 [`mode`](/config/mode)）。相同的值也可以通过 `process.env.KEY` 访问。替换语义见 [DefinePlugin — `import.meta.env`](/plugins/webpack/define-plugin#import-meta-env)。
+
 ### import.meta.resolve
 
 <ApiMeta stability={Stability.Experimental} addedVersion="2.0.0" />
