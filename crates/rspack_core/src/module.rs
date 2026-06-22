@@ -14,7 +14,7 @@ use rspack_cacheable::{
 use rspack_collections::{Identifiable, Identifier, IdentifierMap, IdentifierSet};
 use rspack_error::{Diagnosable, Result};
 use rspack_fs::ReadableFileSystem;
-use rspack_hash::{RspackHash, RspackHashDigest, RspackHashable};
+use rspack_hash::{RspackHash, RspackHashDigest, RspackHashable, write_u64_hex};
 use rspack_paths::ArcPathSet;
 use rspack_sources::BoxSource;
 use rspack_util::{
@@ -923,9 +923,10 @@ pub fn module_update_hash(
   runtime: Option<&RuntimeSpec>,
 ) {
   let chunk_graph = &compilation.build_chunk_graph_artifact.chunk_graph;
-  chunk_graph
-    .get_module_graph_hash(module, compilation, runtime)
-    .hash(hasher);
+  write_u64_hex(
+    chunk_graph.get_module_graph_hash(module, compilation, runtime),
+    hasher,
+  );
   if let Some(deps) = module.get_presentational_dependencies() {
     for dep in deps {
       dep.update_hash(hasher, compilation, runtime);

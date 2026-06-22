@@ -148,22 +148,44 @@ pub fn hash_by_json<T: serde::Serialize>(value: &T, state: &mut RspackHash) {
   state.write(json.as_bytes());
 }
 
+#[inline]
+pub fn write_u64_hex(value: u64, state: &mut RspackHash) {
+  if value == 0 {
+    state.write(b"0");
+    return;
+  }
+
+  let bytes = value.to_be_bytes();
+  let first = bytes
+    .iter()
+    .position(|&byte| byte != 0)
+    .expect("zero value should have returned");
+  let mut output = [0; 16];
+  let encoded = hex(&bytes[first..], &mut output).as_bytes();
+
+  if bytes[first] < 0x10 {
+    state.write(&encoded[1..]);
+  } else {
+    state.write(encoded);
+  }
+}
+
 #[macro_export]
 macro_rules! rspack_hash_object {
   ($state:expr, { $($key:expr => $value:expr),* $(,)? }) => {{
-    $crate::RspackHashable::hash("{", $state);
+    $state.write(b"{");
     let mut is_first_rspack_hash_field = true;
     $(
       if !is_first_rspack_hash_field {
-        $crate::RspackHashable::hash(",", $state);
+        $state.write(b",");
       }
       is_first_rspack_hash_field = false;
       $crate::RspackHashable::hash($key, $state);
-      $crate::RspackHashable::hash(":", $state);
+      $state.write(b":");
       $crate::RspackHashable::hash(&$value, $state);
     )*
     let _ = is_first_rspack_hash_field;
-    $crate::RspackHashable::hash("}", $state);
+    $state.write(b"}");
   }};
 }
 

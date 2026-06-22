@@ -1,5 +1,5 @@
 use rspack_hash::{
-  HashDigest, HashFunction, HashSalt, RspackHash, RspackHashDigest, RspackHashable,
+  HashDigest, HashFunction, HashSalt, RspackHash, RspackHashDigest, RspackHashable, write_u64_hex,
 };
 
 #[test]
@@ -37,6 +37,27 @@ fn hash_salt_is_written_as_raw_bytes() {
   let expected = expected.digest(&HashDigest::Hex).encoded().to_string();
 
   assert_eq!(salted, expected);
+}
+
+#[test]
+fn writes_u64_hex_without_leading_zeroes() {
+  for (value, expected) in [
+    (0, "0"),
+    (0x0f, "f"),
+    (0x10, "10"),
+    (0x0abc, "abc"),
+    (u64::MAX, "ffffffffffffffff"),
+  ] {
+    let mut actual = RspackHash::new(&HashFunction::Xxhash64);
+    write_u64_hex(value, &mut actual);
+    let actual = actual.digest(&HashDigest::Hex).encoded().to_string();
+
+    let mut expected_hash = RspackHash::new(&HashFunction::Xxhash64);
+    expected_hash.write(expected.as_bytes());
+    let expected = expected_hash.digest(&HashDigest::Hex).encoded().to_string();
+
+    assert_eq!(actual, expected);
+  }
 }
 
 #[test]

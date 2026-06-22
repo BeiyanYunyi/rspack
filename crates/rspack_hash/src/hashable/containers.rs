@@ -32,16 +32,16 @@ impl<T: RspackHashable> RspackHashable for Option<T> {
 }
 
 fn hash_iter<T: RspackHashable>(mut iter: impl Iterator<Item = T>, state: &mut RspackHash) {
-  "[".hash(state);
+  state.write(b"[");
   if let Some(item) = iter.next() {
     item.hash(state);
   }
 
   for item in iter {
-    ",".hash(state);
+    state.write(b",");
     item.hash(state);
   }
-  "]".hash(state);
+  state.write(b"]");
 }
 
 impl<T: RspackHashable> RspackHashable for [T] {
@@ -76,10 +76,10 @@ impl<T: RspackHashable, const N: usize> RspackHashable for [T; N] {
 
 impl<A: RspackHashable, B: RspackHashable> RspackHashable for (A, B) {
   fn hash(&self, state: &mut RspackHash) {
-    "(".hash(state);
+    state.write(b"(");
     self.0.hash(state);
-    ",".hash(state);
+    state.write(b",");
     self.1.hash(state);
-    ")".hash(state);
+    state.write(b")");
   }
 }
