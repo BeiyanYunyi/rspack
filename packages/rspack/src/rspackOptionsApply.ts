@@ -394,10 +394,6 @@ export class RspackOptionsApply {
       }
     }
     if (options.optimization.nodeEnv) {
-      // Expose `NODE_ENV` (derived from mode) as both `process.env.NODE_ENV` and
-      // `import.meta.env.NODE_ENV`. Like EnvironmentPlugin this is just a
-      // per-key DefinePlugin; ImportMetaPlugin collects the
-      // `import.meta.env.*` definitions from the compilation.
       const nodeEnv = JSON.stringify(options.optimization.nodeEnv);
       new DefinePlugin({
         'process.env.NODE_ENV': nodeEnv,

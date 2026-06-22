@@ -44,12 +44,6 @@ class EnvironmentPlugin {
   apply(compiler: Compiler) {
     const definitions: Record<string, CodeValue> = Object.create(null);
     for (const key of this.keys) {
-      // Use `hasOwnProperty` rather than `process.env[key] !== undefined` so that
-      // names inherited from `Object.prototype` (e.g. `__proto__`, `constructor`)
-      // are not mistaken for defined env variables — `process.env.__proto__`
-      // returns the prototype object, not an env value. For real env variables
-      // (which are always strings) this is equivalent to the `!== undefined`
-      // check, including the empty-string case.
       const value = Object.prototype.hasOwnProperty.call(process.env, key)
         ? process.env[key]
         : this.defaultValues[key];
@@ -70,13 +64,6 @@ class EnvironmentPlugin {
         );
       }
 
-      // Expose each variable as both `process.env.KEY` and `import.meta.env.KEY`.
-      // EnvironmentPlugin is just a thin DefinePlugin wrapper (matching webpack) —
-      // the merging of these per-key defines into the whole `import.meta.env`
-      // object is handled by ImportMetaPlugin. Env values are string data;
-      // `JSON.stringify` turns them into code-string literals (DefinePlugin emits
-      // string values verbatim as code fragments). `undefined` becomes the
-      // `undefined` identifier.
       const defValue =
         value === undefined ? 'undefined' : JSON.stringify(value);
       definitions[`process.env.${key}`] = defValue;
