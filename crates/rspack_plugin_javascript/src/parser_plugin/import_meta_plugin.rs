@@ -236,9 +236,8 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for ImportMetaPlugin {
     for_name: &str,
   ) -> Option<eval::BasicEvaluatedExpression<'a>> {
     let mut evaluated = None;
-    if for_name == expr_name::IMPORT_META {
-      evaluated = Some("object".to_string());
-    } else if expr.arg.as_member().is_some_and(is_import_meta_env_member)
+    if for_name == expr_name::IMPORT_META
+      || expr.arg.as_member().is_some_and(is_import_meta_env_member)
       || for_name == expr_name::IMPORT_META_ENV
     {
       evaluated = Some("object".to_string());
@@ -559,8 +558,7 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for ImportMetaPlugin {
     _members_optionals: &[bool],
     _member_ranges: &[Span],
   ) -> Option<bool> {
-    if for_name != expr_name::IMPORT_META || !members.first().is_some_and(|member| member == "env")
-    {
+    if for_name != expr_name::IMPORT_META || members.first().is_none_or(|member| member != "env") {
       return None;
     }
 
@@ -573,9 +571,7 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for ImportMetaPlugin {
       return Some(true);
     }
 
-    let Some(name) = members.get(1) else {
-      return None;
-    };
+    let name = members.get(1)?;
 
     add_import_meta_env_value_dependency(parser);
     if has_import_meta_env_definition(parser.compilation_id, name.as_str()) {
@@ -630,13 +626,13 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for ImportMetaPlugin {
               .is_some_and(|member| member == "env")
           {
             add_import_meta_env_value_dependency(parser);
-            if let Some(name) = members.members.get(1) {
-              if !has_import_meta_env_definition(parser.compilation_id, name.as_str()) {
-                parser.add_presentational_dependency(Box::new(ConstDependency::new(
-                  expr.span().into(),
-                  "undefined".into(),
-                )));
-              }
+            if let Some(name) = members.members.get(1)
+              && !has_import_meta_env_definition(parser.compilation_id, name.as_str())
+            {
+              parser.add_presentational_dependency(Box::new(ConstDependency::new(
+                expr.span().into(),
+                "undefined".into(),
+              )));
             }
             return Some(true);
           }

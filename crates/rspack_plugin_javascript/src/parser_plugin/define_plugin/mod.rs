@@ -81,13 +81,15 @@ pub(crate) fn remove_import_meta_env_definitions(compilation_id: CompilationId) 
 pub(crate) fn import_meta_env_definitions_string(compilation_id: CompilationId) -> String {
   IMPORT_META_ENV_DEFINITIONS_MAP
     .get(&compilation_id)
-    .map(|state| {
-      state
-        .serialized
-        .clone()
-        .unwrap_or_else(|| serialize_import_meta_env_definitions(&state.definitions))
-    })
-    .unwrap_or_else(|| "{}".to_string())
+    .map_or_else(
+      || "{}".to_string(),
+      |state| {
+        state
+          .serialized
+          .clone()
+          .unwrap_or_else(|| serialize_import_meta_env_definitions(&state.definitions))
+      },
+    )
 }
 
 pub(crate) fn has_import_meta_env_definition(compilation_id: CompilationId, name: &str) -> bool {

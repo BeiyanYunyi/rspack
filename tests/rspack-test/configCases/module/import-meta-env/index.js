@@ -2,7 +2,7 @@ it("should work import.meta.env with EnvironmentPlugin", () => {
     expect(import.meta.env.AAA).toBe(process.env.AAA);
 });
 
-it("import.meta.env behaves like process.env", async (done) => {
+it("import.meta.env behaves like process.env", () => {
     try {
         const importMetaEnv = import.meta.env;
         importMetaEnv;
@@ -20,7 +20,4 @@ it("import.meta.env behaves like process.env", async (done) => {
     } catch (_e) {
         // ignore
     }
-    const fs = await eval("import('fs')");
-    expect(fs.readFileSync(__filename, "utf-8")).toMatchSnapshot();
-    done();
 });

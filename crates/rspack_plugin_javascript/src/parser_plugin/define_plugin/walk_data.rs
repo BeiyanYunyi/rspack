@@ -411,12 +411,8 @@ impl WalkData {
       let define_record = ObjectDefineRecord::from_destructuring_code(Value::Object(obj))
         .with_on_expression(Box::new(
           move |record, parser, span, start, end, for_name| {
-            let Some(properties) = parser.destructuring_assignment_properties.get(&span) else {
-              return None;
-            };
-            let Some(obj) = record.object.as_object() else {
-              return None;
-            };
+            let properties = parser.destructuring_assignment_properties.get(&span)?;
+            let obj = record.object.as_object()?;
             if properties
               .iter()
               .any(|prop| !obj.contains_key(prop.id.as_str()))
@@ -467,7 +463,7 @@ impl WalkData {
           walk_data,
           destructuring_definitions,
         );
-        apply_array_define(Cow::Owned(full_key.clone()), array, walk_data);
+        apply_array_define(Cow::Owned(full_key), array, walk_data);
       } else if let Some(obj) = code.as_object() {
         walk_object(
           obj,
@@ -475,7 +471,7 @@ impl WalkData {
           walk_data,
           destructuring_definitions,
         );
-        apply_object_define(Cow::Owned(full_key.clone()), obj, walk_data);
+        apply_object_define(Cow::Owned(full_key), obj, walk_data);
       } else {
         apply_define_key(prefix.clone(), Cow::Owned(key.to_string()), walk_data);
         apply_define(Cow::Owned(full_key), code, walk_data);

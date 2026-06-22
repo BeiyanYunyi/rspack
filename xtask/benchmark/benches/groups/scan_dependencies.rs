@@ -11,8 +11,9 @@ use criterion::{BatchSize, black_box};
 use rspack::builder::{Builder as _, NodeOptionBuilder};
 use rspack_benchmark::Criterion;
 use rspack_core::{
-  BuildInfo, BuildMeta, Compiler, CompilerOptions, Mode, ModuleIdentifier, ModuleType,
-  Optimization, ParseMeta, ParserOptions, ResourceData, RuntimeTemplate, SideEffectOption,
+  BuildInfo, BuildMeta, CompilationId, Compiler, CompilerOptions, Mode, ModuleIdentifier,
+  ModuleType, Optimization, ParseMeta, ParserOptions, ResourceData, RuntimeTemplate,
+  SideEffectOption,
 };
 use rspack_plugin_javascript::{
   BoxJavascriptParserPlugin,
@@ -257,6 +258,7 @@ impl PreparedScanDependenciesBenchmarkCase {
       &mut iteration_state.build_info,
       self.module_identifier,
       Some(&self.parser_options),
+      CompilationId::default(),
       &mut iteration_state.semicolons,
       &mut iteration_state.parser_plugins,
       std::mem::take(&mut iteration_state.parse_meta),
