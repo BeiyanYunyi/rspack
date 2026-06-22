@@ -44,13 +44,9 @@ it("should work import.meta.env with EnvironmentPlugin", () => {
     expect("aaa").toBe("aaa");
 });
 
-it("should work import.meta.env with DotenvPlugin", () => {
-    expect("https://api.example.com").toBe("https://api.example.com");
-});
-
 it("import.meta.env behaves like process.env", async (done) => {
     try {
-        const importMetaEnv = {"AAA":"aaa","NODE_ENV":"production","WEBPACK_API_URL":"https://api.example.com"};
+        const importMetaEnv = {"AAA":"aaa","NODE_ENV":"production"};
         importMetaEnv;
         const processEnv = process.env;
         processEnv;
@@ -61,7 +57,7 @@ it("import.meta.env behaves like process.env", async (done) => {
         'object';
         typeof process.env;
 
-        const { env } = ({env: {"AAA":"aaa","NODE_ENV":"production","WEBPACK_API_URL":"https://api.example.com"}});
+        const { env } = ({env: {"AAA":"aaa","NODE_ENV":"production"}});
         env;
     } catch (_e) {
         // ignore

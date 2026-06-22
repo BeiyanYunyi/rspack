@@ -5,7 +5,6 @@ const { EnvironmentPlugin } = require('@rspack/core');
 /** @type {import("@rspack/core").Configuration} */
 module.exports = {
   target: 'node',
-  dotenv: true,
   plugins: [
     new EnvironmentPlugin({
       AAA: 'aaa',

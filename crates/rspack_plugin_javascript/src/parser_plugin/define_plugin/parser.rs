@@ -7,7 +7,7 @@ use std::{
 };
 
 use rspack_util::SpanExt;
-use swc_experimental_ecma_ast::{Expr, Ident, MemberExpr, UnaryExpr};
+use swc_experimental_ecma_ast::{Expr, Ident, MemberExpr, Span, UnaryExpr};
 
 use super::{VALUE_DEP_PREFIX, utils::gen_const_dep, walk_data::WalkData};
 use crate::{
@@ -39,6 +39,24 @@ impl DefineParserPlugin {
         .build_info
         .value_dependencies
         .insert(cache_key, value.clone());
+    }
+  }
+
+  fn add_destructuring_value_dependencies(
+    &self,
+    parser: &mut JavascriptParser,
+    key: &str,
+    span: Span,
+  ) {
+    let Some(properties) = parser
+      .destructuring_assignment_properties
+      .get(&span)
+      .cloned()
+    else {
+      return;
+    };
+    for prop in properties.iter() {
+      self.add_value_dependency(parser, &format!("{key}.{}", prop.id));
     }
   }
 
@@ -170,6 +188,10 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for DefineParserPlugin {
         || self
           .walk_data
           .object_define_record
+          .contains_key(info.name.as_str())
+        || self
+          .walk_data
+          .destructuring_define_record
           .contains_key(info.name.as_str()))
     {
       return Some(true);
@@ -201,6 +223,19 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for DefineParserPlugin {
     {
       self.add_value_dependency(parser, for_name);
       let span = expr.span;
+      return on_expression(
+        record,
+        parser,
+        span,
+        span.real_lo(),
+        span.real_hi(),
+        for_name,
+      );
+    } else if let Some(record) = self.walk_data.destructuring_define_record.get(for_name)
+      && let Some(on_expression) = &record.on_expression
+    {
+      let span = expr.span;
+      self.add_destructuring_value_dependencies(parser, for_name, span);
       return on_expression(
         record,
         parser,

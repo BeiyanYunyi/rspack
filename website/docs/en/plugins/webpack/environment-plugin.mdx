@@ -10,10 +10,6 @@ import WebpackLicense from '@components/WebpackLicense';
 
 The `EnvironmentPlugin` is shorthand for using the [`DefinePlugin`](/plugins/webpack/define-plugin) on [`process.env`](https://nodejs.org/api/process.html#process_process_env) keys.
 
-:::info
-In addition to `process.env.KEY`, Rspack also exposes every key as `import.meta.env.KEY`, so the same variables are reachable from ESM source code. See [DefinePlugin — `import.meta.env`](/plugins/webpack/define-plugin#import-meta-env).
-:::
-
 ## Options
 
 - **Type:** `string[] | Record<string, string>`
@@ -122,14 +118,20 @@ new rspack.EnvironmentPlugin({
 });
 ```
 
-### Loading `.env` files
+### DotenvPlugin
 
-Use the [`dotenv`](/config/dotenv) config option to load environment variables from `.env` files. Every matching variable is exposed as both `import.meta.env.KEY` and `process.env.KEY`:
+The third-party [`DotenvPlugin`](https://github.com/mrsteele/dotenv-webpack) (`dotenv-webpack`) allows you to expose (a subset of) [dotenv variables](https://www.npmjs.com/package/dotenv):
 
-```js title="rspack.config.mjs"
-export default {
-  dotenv: true,
-};
+```js
+// .env
+DB_HOST=127.0.0.1
+DB_PASS=foobar
+S3_API=mysecretkey
 ```
 
-See [`dotenv`](/config/dotenv) for prefix, directory and template options.
+```js
+new Dotenv({
+  path: './.env', // Path to .env file (this is the default)
+  safe: true, // load .env.example (defaults to "false" which does not use dotenv-safe)
+});
+```

@@ -4,11 +4,11 @@ mod util;
 
 use rspack_core::{
   AsyncDependenciesBlock, BoxDependency, BoxDependencyTemplate, BuildInfo, BuildMeta,
-  CompilerOptions, FactoryMeta, ModuleIdentifier, ModuleLayer, ModuleType, ParseMeta,
-  ParserOptions, ResourceData, SideEffectsBailoutItemWithSpan,
+  CompilationId, CompilerOptions, FactoryMeta, ModuleIdentifier, ModuleLayer, ModuleType,
+  ParseMeta, ParserOptions, ResourceData, SideEffectsBailoutItemWithSpan,
 };
 use rspack_error::Diagnostic;
-use rustc_hash::{FxHashMap, FxHashSet};
+use rustc_hash::FxHashSet;
 use swc_experimental_allocator::Allocator;
 use swc_experimental_ecma_ast::{Comments, Program};
 use swc_experimental_ecma_semantic::resolver::Semantic;
@@ -54,7 +54,7 @@ pub fn scan_dependencies(
   build_info: &mut BuildInfo,
   module_identifier: ModuleIdentifier,
   module_parser_options: Option<&ParserOptions>,
-  define_plugin_definitions: Option<&FxHashMap<String, serde_json::Value>>,
+  compilation_id: CompilationId,
   semicolons: &mut FxHashSet<u32>,
   parser_plugins: &mut Vec<BoxJavascriptParserPlugin>,
   parse_meta: ParseMeta,
@@ -77,7 +77,7 @@ pub fn scan_dependencies(
     semicolons,
     parser_plugins,
     parse_meta,
-    define_plugin_definitions,
+    compilation_id,
     parser_runtime_requirements,
   );
 

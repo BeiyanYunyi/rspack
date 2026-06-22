@@ -8,7 +8,6 @@ export const DefinePlugin = create(
   function (define: DefinePluginOptions): NormalizedCodeValue {
     const supportsBigIntLiteral =
       this.options.output.environment?.bigIntLiteral ?? false;
-
     return normalizeValue(define, supportsBigIntLiteral);
   },
   'compilation',

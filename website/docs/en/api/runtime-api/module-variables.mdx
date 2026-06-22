@@ -179,18 +179,6 @@ Returns the directory path of the current module. This is the ESM equivalent of 
 
 The compilation behavior is controlled by the [`node.__dirname`](/config/node#node__dirname) configuration option. See that configuration documentation for details.
 
-### import.meta.env
-
-Exposes environment variables to ESM source code. `import.meta.env` itself is replaced with an object literal, so `typeof import.meta.env` evaluates to `'object'` and `import.meta.env` is truthy. Each `import.meta.env.KEY` access is inlined with its value individually, so unused keys are tree-shaken away; unknown accesses such as `import.meta.env.NOT_EXIST` resolve to `undefined` (falsy).
-
-```js title=src/index.js
-console.log(typeof import.meta.env); // 'object'
-console.log(import.meta.env.NODE_ENV); // 'production'
-console.log(import.meta.env.NOT_EXIST); // undefined
-```
-
-The variables are collected from [`EnvironmentPlugin`](/plugins/webpack/environment-plugin), the [`dotenv`](/config/dotenv) config option, any user [`DefinePlugin`](/plugins/webpack/define-plugin) `import.meta.env.*` / `process.env.*` keys, and `NODE_ENV` (derived from [`mode`](/config/mode)). The same values are also reachable as `process.env.KEY`. See [DefinePlugin — `import.meta.env`](/plugins/webpack/define-plugin#import-meta-env) for the replacement semantics.
-
 ### import.meta.resolve
 
 <ApiMeta stability={Stability.Experimental} addedVersion="2.0.0" />

@@ -28,7 +28,6 @@ import type {
   Dependencies,
   DevServer,
   DevTool,
-  Dotenv,
   DevtoolFallbackModuleFilenameTemplate,
   DevtoolModuleFilenameTemplate,
   DevtoolNamespace,
@@ -263,7 +262,6 @@ export const getNormalizedRspackOptions = (
     externalsPresets: cloneObject(config.externalsPresets),
     infrastructureLogging: cloneObject(config.infrastructureLogging),
     devtool: config.devtool,
-    dotenv: config.dotenv,
     node: nestedConfig(
       config.node,
       (node) =>
@@ -673,7 +671,6 @@ export interface RspackOptionsNormalized {
   externalsPresets: ExternalsPresets;
   infrastructureLogging: InfrastructureLogging;
   devtool?: DevTool;
-  dotenv?: Dotenv;
   node: Node;
   loader: Loader;
   cache?: CacheNormalized;

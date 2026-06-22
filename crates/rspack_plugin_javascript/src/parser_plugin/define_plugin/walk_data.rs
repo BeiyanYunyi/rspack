@@ -6,18 +6,19 @@ use std::{
 use itertools::Itertools as _;
 use regex::Regex;
 use rspack_error::Diagnostic;
-use rustc_hash::FxHashMap;
+use rspack_util::fx_hash::FxHashMap;
 use serde_json::{Map, Value, json};
 use swc_experimental_ecma_ast::Span;
 
 use super::{
-  ConflictingValuesError, DefineValue,
+  ConflictingValuesError, DefineValue, ImportMetaEnvDefinitions,
   utils::{code_to_string, gen_const_dep},
 };
 use crate::{utils::eval::BasicEvaluatedExpression, visitors::JavascriptParser};
 
 static TYPEOF_OPERATOR_REGEXP: LazyLock<Regex> =
   LazyLock::new(|| Regex::new("^typeof\\s+").expect("should init `TYPEOF_OPERATOR_REGEXP`"));
+const IMPORT_META_ENV_PREFIX: &str = "import.meta.env.";
 
 type OnEvaluateIdentifier = dyn for<'p> Fn(
     &DefineRecord,
@@ -169,6 +170,15 @@ impl ObjectDefineRecord {
     }
   }
 
+  fn from_destructuring_code(obj: Value) -> Self {
+    assert!(matches!(obj, Value::Object(_)));
+    Self {
+      object: obj,
+      on_evaluate_identifier: None,
+      on_expression: None,
+    }
+  }
+
   fn with_on_evaluate_identifier(
     mut self,
     on_evaluate_identifier: Box<OnObjectEvaluateIdentifier>,
@@ -186,11 +196,13 @@ impl ObjectDefineRecord {
 #[derive(Debug, Default)]
 pub struct WalkData {
   pub tiling_definitions: FxHashMap<String, String>,
+  pub import_meta_env_definitions: ImportMetaEnvDefinitions,
   pub diagnostics: Vec<Diagnostic>,
   pub can_rename: FxHashMap<Arc<str>, Option<Arc<str>>>,
   pub define_record: FxHashMap<Arc<str>, DefineRecord>,
   pub typeof_define_record: FxHashMap<Arc<str>, DefineRecord>,
   pub object_define_record: FxHashMap<Arc<str>, ObjectDefineRecord>,
+  pub destructuring_define_record: FxHashMap<Arc<str>, ObjectDefineRecord>,
 }
 
 impl WalkData {
@@ -390,14 +402,79 @@ impl WalkData {
       walk_data.object_define_record.insert(key, define_record);
     }
 
-    fn walk_code(code: &Value, prefix: Cow<str>, key: Cow<str>, walk_data: &mut WalkData) {
+    fn apply_destructuring_object_define(
+      key: Cow<str>,
+      obj: Map<String, Value>,
+      walk_data: &mut WalkData,
+    ) {
+      let key = Arc::<str>::from(key);
+      let define_record = ObjectDefineRecord::from_destructuring_code(Value::Object(obj))
+        .with_on_expression(Box::new(
+          move |record, parser, span, start, end, for_name| {
+            let Some(properties) = parser.destructuring_assignment_properties.get(&span) else {
+              return None;
+            };
+            let Some(obj) = record.object.as_object() else {
+              return None;
+            };
+            if properties
+              .iter()
+              .any(|prop| !obj.contains_key(prop.id.as_str()))
+            {
+              return None;
+            }
+
+            let code = code_to_string(
+              &record.object,
+              Some(!parser.is_asi_position(span.start)),
+              Some(properties),
+            );
+            for dep in gen_const_dep(parser, code, for_name, start, end) {
+              parser.add_presentational_dependency(dep);
+            }
+            Some(true)
+          },
+        ));
+      walk_data
+        .destructuring_define_record
+        .insert(key, define_record);
+    }
+
+    fn walk_code(
+      code: &Value,
+      prefix: Cow<str>,
+      key: Cow<str>,
+      walk_data: &mut WalkData,
+      destructuring_definitions: &mut FxHashMap<String, Map<String, Value>>,
+    ) {
       let prefix_for_object = || Cow::Owned(format!("{prefix}{key}."));
       let full_key = format!("{prefix}{key}");
+      if let Some(env_key) = full_key.strip_prefix(IMPORT_META_ENV_PREFIX) {
+        walk_data
+          .import_meta_env_definitions
+          .insert(env_key.to_string(), code.clone());
+      }
+      if let Some((parent_key, child_key)) = full_key.rsplit_once('.') {
+        destructuring_definitions
+          .entry(parent_key.to_string())
+          .or_default()
+          .insert(child_key.to_string(), code.clone());
+      }
       if let Some(array) = code.as_array() {
-        walk_array(array, prefix_for_object(), walk_data);
+        walk_array(
+          array,
+          prefix_for_object(),
+          walk_data,
+          destructuring_definitions,
+        );
         apply_array_define(Cow::Owned(full_key.clone()), array, walk_data);
       } else if let Some(obj) = code.as_object() {
-        walk_object(obj, prefix_for_object(), walk_data);
+        walk_object(
+          obj,
+          prefix_for_object(),
+          walk_data,
+          destructuring_definitions,
+        );
         apply_object_define(Cow::Owned(full_key.clone()), obj, walk_data);
       } else {
         apply_define_key(prefix.clone(), Cow::Owned(key.to_string()), walk_data);
@@ -405,19 +482,52 @@ impl WalkData {
       }
     }
 
-    fn walk_array(arr: &[Value], prefix: Cow<str>, walk_data: &mut WalkData) {
+    fn walk_array(
+      arr: &[Value],
+      prefix: Cow<str>,
+      walk_data: &mut WalkData,
+      destructuring_definitions: &mut FxHashMap<String, Map<String, Value>>,
+    ) {
       arr.iter().enumerate().for_each(|(key, code)| {
-        walk_code(code, prefix.clone(), Cow::Owned(key.to_string()), walk_data)
+        walk_code(
+          code,
+          prefix.clone(),
+          Cow::Owned(key.to_string()),
+          walk_data,
+          destructuring_definitions,
+        )
       })
     }
 
-    fn walk_object(obj: &Map<String, Value>, prefix: Cow<str>, walk_data: &mut WalkData) {
-      obj
-        .iter()
-        .for_each(|(key, code)| walk_code(code, prefix.clone(), Cow::Owned(key.clone()), walk_data))
+    fn walk_object(
+      obj: &Map<String, Value>,
+      prefix: Cow<str>,
+      walk_data: &mut WalkData,
+      destructuring_definitions: &mut FxHashMap<String, Map<String, Value>>,
+    ) {
+      obj.iter().for_each(|(key, code)| {
+        walk_code(
+          code,
+          prefix.clone(),
+          Cow::Owned(key.clone()),
+          walk_data,
+          destructuring_definitions,
+        )
+      })
     }
 
-    let object = definitions.clone().into_iter().collect();
-    walk_object(&object, "".into(), self);
+    let mut destructuring_definitions = FxHashMap::default();
+    definitions.iter().for_each(|(key, code)| {
+      walk_code(
+        code,
+        "".into(),
+        Cow::Borrowed(key),
+        self,
+        &mut destructuring_definitions,
+      )
+    });
+    for (key, obj) in destructuring_definitions {
+      apply_destructuring_object_define(Cow::Owned(key), obj, self);
+    }
   }
 }

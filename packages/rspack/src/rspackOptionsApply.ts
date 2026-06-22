@@ -73,7 +73,6 @@ import {
 } from './builtin-plugin';
 import { getTargetProperties, getTargetsProperties } from './config/target';
 import MemoryCachePlugin from './lib/cache/MemoryCachePlugin';
-import { DotenvPlugin } from './lib/DotenvPlugin';
 import EntryOptionPlugin from './lib/EntryOptionPlugin';
 import IgnoreWarningsPlugin from './lib/IgnoreWarningsPlugin';
 import { DefaultStatsFactoryPlugin } from './stats/DefaultStatsFactoryPlugin';
@@ -259,12 +258,6 @@ export class RspackOptionsApply {
       new HttpUriPlugin(options.experiments.buildHttp).apply(compiler);
     }
 
-    if (options.dotenv) {
-      new DotenvPlugin(
-        typeof options.dotenv === 'boolean' ? {} : options.dotenv,
-      ).apply(compiler);
-    }
-
     new EnsureChunkConditionsPlugin().apply(compiler);
     if (options.optimization.mergeDuplicateChunks) {
       new MergeDuplicateChunksPlugin().apply(compiler);
@@ -402,8 +395,8 @@ export class RspackOptionsApply {
     }
     if (options.optimization.nodeEnv) {
       // Expose `NODE_ENV` (derived from mode) as both `process.env.NODE_ENV` and
-      // `import.meta.env.NODE_ENV`. Like EnvironmentPlugin / DotenvPlugin this is
-      // just a per-key DefinePlugin; ImportMetaPlugin collects the
+      // `import.meta.env.NODE_ENV`. Like EnvironmentPlugin this is just a
+      // per-key DefinePlugin; ImportMetaPlugin collects the
       // `import.meta.env.*` definitions from the compilation.
       const nodeEnv = JSON.stringify(options.optimization.nodeEnv);
       new DefinePlugin({

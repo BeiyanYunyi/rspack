@@ -1542,7 +1542,6 @@ async fn create_concatenated_module(
         resolver_factory: compilation.resolver_factory.clone(),
         plugin_driver: compilation.plugin_driver.clone(),
         compiler_options: compilation.options.clone(),
-        define_plugin_definitions: Arc::new(compilation.define_plugin_definitions.clone()),
         fs: compilation.input_filesystem.clone(),
         runtime_template: compilation.runtime_template.create_module_code_template(),
       },

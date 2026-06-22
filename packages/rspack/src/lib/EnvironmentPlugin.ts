@@ -12,6 +12,9 @@ import type { Compiler } from '../Compiler';
 import { DefinePlugin } from '../builtin-plugin';
 import WebpackError from './WebpackError';
 
+// Waiting to adapt > import("./DefinePlugin").CodeValue
+type CodeValue = any;
+
 class EnvironmentPlugin {
   keys: string[];
   defaultValues: Record<string, string | undefined | null>;
@@ -39,7 +42,7 @@ class EnvironmentPlugin {
    * @returns
    */
   apply(compiler: Compiler) {
-    const definitions: Record<string, string> = Object.create(null);
+    const definitions: Record<string, CodeValue> = Object.create(null);
     for (const key of this.keys) {
       // Use `hasOwnProperty` rather than `process.env[key] !== undefined` so that
       // names inherited from `Object.prototype` (e.g. `__proto__`, `constructor`)
@@ -73,8 +76,7 @@ class EnvironmentPlugin {
       // object is handled by ImportMetaPlugin. Env values are string data;
       // `JSON.stringify` turns them into code-string literals (DefinePlugin emits
       // string values verbatim as code fragments). `undefined` becomes the
-      // `undefined` identifier. `DotenvPlugin` reuses this by passing its
-      // resolved env as the default-values map.
+      // `undefined` identifier.
       const defValue =
         value === undefined ? 'undefined' : JSON.stringify(value);
       definitions[`process.env.${key}`] = defValue;

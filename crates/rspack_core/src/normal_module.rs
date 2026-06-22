@@ -574,7 +574,7 @@ impl Module for NormalModule {
         loaders: &self.loaders,
         resource_data: &self.resource_data,
         compiler_options: &build_context.compiler_options,
-        define_plugin_definitions: Some(&build_context.define_plugin_definitions),
+        compilation_id: build_context.compilation_id,
         additional_data: loader_result.additional_data,
         factory_meta: self.factory_meta.as_ref(),
         build_info: &mut self.build_info,

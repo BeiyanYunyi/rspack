@@ -13,7 +13,6 @@
   "context",
   "dev-server",
   "devtool",
-  "dotenv",
   "entry",
   "experiments",
   "extends",

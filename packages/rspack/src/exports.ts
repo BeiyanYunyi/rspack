@@ -131,7 +131,6 @@ export {
   type DllReferencePluginOptionsSourceType,
 } from './lib/DllReferencePlugin';
 export { default as EntryOptionPlugin } from './lib/EntryOptionPlugin';
-export { DotenvPlugin, type DotenvPluginOptions } from './lib/DotenvPlugin';
 export { EnvironmentPlugin } from './lib/EnvironmentPlugin';
 export { LoaderOptionsPlugin } from './lib/LoaderOptionsPlugin';
 export { LoaderTargetPlugin } from './lib/LoaderTargetPlugin';

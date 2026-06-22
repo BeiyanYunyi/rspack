@@ -194,7 +194,7 @@ console.log(import.meta.env.MODE); // 'production'
 console.log(import.meta.env.NOT_EXIST); // undefined
 ```
 
-通常你不需要手写这个 `DefinePlugin`。[`EnvironmentPlugin`](/plugins/webpack/environment-plugin)、内置的 [`dotenv`](/config/dotenv) 选项，以及用户 `DefinePlugin` 中的 `import.meta.env.*` / `process.env.*` 键，都会被收集到同一个累积的环境对象中，并自动以 `import.meta.env` 暴露。
+通常你不需要手写这个 `DefinePlugin`。[`EnvironmentPlugin`](/plugins/webpack/environment-plugin) 以及用户 `DefinePlugin` 中的 `import.meta.env.*` / `process.env.*` 键，都会被收集到同一个累积的环境对象中，并自动以 `import.meta.env` 暴露。
 
 ## `process.env`
 
@@ -211,7 +211,7 @@ console.log(process.env.NODE_ENV); // 'production'
 console.log(process.env.CUSTOM); // 运行时从运行时的 process.env 解析
 ```
 
-当环境对象被累积时（通过 [`EnvironmentPlugin`](/plugins/webpack/environment-plugin) / [`dotenv`](/config/dotenv) / `NODE_ENV`），它的每个 key 也会按 key 镜像到 `process.env.KEY`，因此同一个值可以同时通过 `import.meta.env.KEY` 和 `process.env.KEY` 访问 —— 而不会替换整个 `process.env` 对象。
+当环境对象被累积时（通过 [`EnvironmentPlugin`](/plugins/webpack/environment-plugin) / `NODE_ENV`），它的每个 key 也会按 key 镜像到 `process.env.KEY`，因此同一个值可以同时通过 `import.meta.env.KEY` 和 `process.env.KEY` 访问 —— 而不会替换整个 `process.env` 对象。
 
 ### 解构
 

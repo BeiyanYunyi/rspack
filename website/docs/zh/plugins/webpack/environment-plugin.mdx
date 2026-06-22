@@ -10,10 +10,6 @@ import WebpackLicense from '@components/WebpackLicense';
 
 `EnvironmentPlugin` 简化了使用 [`DefinePlugin`](/plugins/webpack/define-plugin) 设置 `process.env` 变量的过程。
 
-:::info
-除了 `process.env.KEY` 之外，Rspack 还会把每个 key 暴露为 `import.meta.env.KEY`，因此同样的变量也可以在 ESM 源码中访问。参见 [DefinePlugin — `import.meta.env`](/plugins/webpack/define-plugin#import-meta-env)。
-:::
-
 ## 选项
 
 - **类型：** `string[] | Record<string, string>`
@@ -122,14 +118,20 @@ new rspack.EnvironmentPlugin({
 });
 ```
 
-### 加载 `.env` 文件
+### DotenvPlugin
 
-使用 [`dotenv`](/config/dotenv) 配置项可以从 `.env` 文件加载环境变量。每个匹配到的变量会同时暴露为 `import.meta.env.KEY` 和 `process.env.KEY`：
+第三方 [`DotenvPlugin`](https://github.com/mrsteele/dotenv-webpack)（`dotenv-webpack`）允许你暴露一部分 [dotenv 变量](https://www.npmjs.com/package/dotenv)：
 
-```js title="rspack.config.mjs"
-export default {
-  dotenv: true,
-};
+```js
+// .env
+DB_HOST=127.0.0.1
+DB_PASS=foobar
+S3_API=mysecretkey
 ```
 
-前缀、目录和模板等选项见 [`dotenv`](/config/dotenv)。
+```js
+new Dotenv({
+  path: './.env', // Path to .env file (this is the default)
+  safe: true, // load .env.example (defaults to "false" which does not use dotenv-safe)
+});
+```

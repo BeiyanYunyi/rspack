@@ -2,10 +2,6 @@ it("should work import.meta.env with EnvironmentPlugin", () => {
     expect(import.meta.env.AAA).toBe(process.env.AAA);
 });
 
-it("should work import.meta.env with DotenvPlugin", () => {
-    expect(import.meta.env.WEBPACK_API_URL).toBe(process.env.WEBPACK_API_URL);
-});
-
 it("import.meta.env behaves like process.env", async (done) => {
     try {
         const importMetaEnv = import.meta.env;

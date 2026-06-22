@@ -194,7 +194,7 @@ console.log(import.meta.env.MODE); // 'production'
 console.log(import.meta.env.NOT_EXIST); // undefined
 ```
 
-You usually do not write this `DefinePlugin` by hand. [`EnvironmentPlugin`](/plugins/webpack/environment-plugin), the built-in [`dotenv`](/config/dotenv) option, and any user `DefinePlugin` `import.meta.env.*` / `process.env.*` keys are all collected into one accumulated env object and exposed as `import.meta.env` automatically.
+You usually do not write this `DefinePlugin` by hand. [`EnvironmentPlugin`](/plugins/webpack/environment-plugin) and any user `DefinePlugin` `import.meta.env.*` / `process.env.*` keys are all collected into one accumulated env object and exposed as `import.meta.env` automatically.
 
 ## `process.env`
 
@@ -211,7 +211,7 @@ console.log(process.env.NODE_ENV); // 'production'
 console.log(process.env.CUSTOM); // resolved from the runtime process.env at runtime
 ```
 
-When the env object is accumulated (via [`EnvironmentPlugin`](/plugins/webpack/environment-plugin) / [`dotenv`](/config/dotenv) / `NODE_ENV`), each of its keys is also mirrored onto `process.env.KEY` per-key, so the same value is reachable from both `import.meta.env.KEY` and `process.env.KEY` — without replacing the whole `process.env` object.
+When the env object is accumulated (via [`EnvironmentPlugin`](/plugins/webpack/environment-plugin) / `NODE_ENV`), each of its keys is also mirrored onto `process.env.KEY` per-key, so the same value is reachable from both `import.meta.env.KEY` and `process.env.KEY` — without replacing the whole `process.env` object.
 
 ### Destructuring
 

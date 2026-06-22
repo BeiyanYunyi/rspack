@@ -22,13 +22,12 @@ use rspack_cacheable::{
 };
 use rspack_core::{
   AsyncDependenciesBlock, BoxDependency, BoxDependencyTemplate, BuildInfo, BuildMeta,
-  CompilerOptions, DependencyId, DependencyLocation, DependencyRange, FactoryMeta, ImportMeta,
-  JavascriptParserCommonjsExportsOption, JavascriptParserOptions, ModuleIdentifier, ModuleLayer,
-  ModuleType, ParseMeta, ResourceData, SideEffectsBailoutItemWithSpan,
+  CompilationId, CompilerOptions, DependencyId, DependencyLocation, DependencyRange, FactoryMeta,
+  ImportMeta, JavascriptParserCommonjsExportsOption, JavascriptParserOptions, ModuleIdentifier,
+  ModuleLayer, ModuleType, ParseMeta, ResourceData, SideEffectsBailoutItemWithSpan,
 };
 use rspack_error::{Diagnostic, Result};
-use rspack_util::fx_hash::FxIndexSet;
-use rustc_hash::{FxHashMap, FxHashSet};
+use rspack_util::fx_hash::{FxHashMap, FxHashSet, FxIndexSet};
 use smallvec::SmallVec;
 use swc_atoms::Atom;
 use swc_experimental_allocator::{Allocator, CloneIn};
@@ -392,7 +391,7 @@ pub struct JavascriptParser<'parser> {
   pub build_info: &'parser mut BuildInfo,
   pub resource_data: &'parser ResourceData,
   pub(crate) compiler_options: &'parser CompilerOptions,
-  pub(crate) define_plugin_definitions: Option<&'parser FxHashMap<String, serde_json::Value>>,
+  pub(crate) compilation_id: CompilationId,
   pub(crate) javascript_options: &'parser JavascriptParserOptions,
   pub parser_runtime_requirements: &'parser ParserRuntimeRequirementsData,
   pub module_type: &'parser ModuleType,
@@ -446,7 +445,7 @@ impl<'parser> JavascriptParser<'parser> {
     semicolons: &'parser mut FxHashSet<u32>,
     parser_plugins: &'parser mut Vec<BoxJavascriptParserPlugin>,
     parse_meta: ParseMeta,
-    define_plugin_definitions: Option<&'parser FxHashMap<String, serde_json::Value>>,
+    compilation_id: CompilationId,
     parser_runtime_requirements: &'parser ParserRuntimeRequirementsData,
   ) -> Self {
     let warning_diagnostics: Vec<Diagnostic> = Vec::new();
@@ -594,7 +593,7 @@ impl<'parser> JavascriptParser<'parser> {
       build_meta,
       build_info,
       compiler_options,
-      define_plugin_definitions,
+      compilation_id,
       module_type,
       module_layer,
       parser_exports_state,

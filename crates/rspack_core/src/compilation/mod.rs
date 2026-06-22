@@ -293,7 +293,6 @@ pub struct Compilation {
   pub build_dependencies: ArcPathIndexSet,
 
   pub value_cache_versions: ValueCacheVersions,
-  pub define_plugin_definitions: HashMap<String, serde_json::Value>,
 
   import_var_map: IdentifierDashMap<RuntimeKeyMap<ImportVarMap>>,
 
@@ -426,7 +425,6 @@ impl Compilation {
       build_dependencies: Default::default(),
 
       value_cache_versions: ValueCacheVersions::default(),
-      define_plugin_definitions: Default::default(),
 
       import_var_map: IdentifierDashMap::default(),
 

@@ -4,7 +4,6 @@ import type { ChunkGraph } from '../ChunkGraph';
 import type { Compilation, PathData } from '../Compilation';
 import type { Compiler } from '../Compiler';
 import type { Chunk } from '../exports';
-import type { DotenvPluginOptions } from '../lib/DotenvPlugin';
 import type WebpackError from '../lib/WebpackError';
 import type { Module } from '../Module';
 import type ModuleGraph from '../ModuleGraph';
@@ -392,11 +391,6 @@ export type DevtoolModuleFilenameTemplate =
 /** A fallback is used when the template string or function above yields duplicates. */
 export type DevtoolFallbackModuleFilenameTemplate =
   DevtoolModuleFilenameTemplate;
-
-/**
- * Enable and configure the Dotenv plugin to load environment variables from .env files.
- */
-export type Dotenv = boolean | DotenvPluginOptions;
 
 /** Tell Rspack what kind of ES-features may be used in the generated runtime-code. */
 export type Environment = {
@@ -3237,10 +3231,6 @@ export type RspackOptions = {
    * The source map configuration.
    */
   devtool?: DevTool;
-  /**
-   * Enable and configure the Dotenv plugin to load environment variables from .env files.
-   */
-  dotenv?: Dotenv;
   /**
    * Options for Node.js environment.
    */
