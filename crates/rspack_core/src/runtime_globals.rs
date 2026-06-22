@@ -2,6 +2,7 @@ use std::sync::LazyLock;
 
 use bitflags::bitflags;
 use heck::ToLowerCamelCase;
+use rspack_hash::{RspackHash, RspackHashable};
 use rustc_hash::FxHashMap;
 
 use crate::{CompilerOptions, runtime_mode::RuntimeMode};
@@ -638,5 +639,11 @@ impl RuntimeGlobals {
       }
     }
     res
+  }
+}
+
+impl RspackHashable for RuntimeGlobals {
+  fn hash(&self, state: &mut RspackHash) {
+    self.bits().hash(state);
   }
 }

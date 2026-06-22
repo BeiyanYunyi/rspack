@@ -16,10 +16,9 @@ use rspack_core::{
 };
 pub use rspack_core::{CssExport, CssExports};
 use rspack_error::{Result, TWithDiagnosticArray};
-use rspack_hash::{RspackHash, RspackHashDigest};
+use rspack_hash::{RspackHash, RspackHashDigest, RspackHashable};
 use rspack_util::{
   atom::Atom,
-  ext::DynHash,
   fx_hash::{FxIndexMap, FxIndexSet},
 };
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -231,11 +230,11 @@ impl ParserAndGenerator for CssParserAndGenerator {
       } else {
         BuildMetaExportsType::Default
       };
-      build_meta.default_object = if named_exports {
+      build_meta.set_default_object(if named_exports {
         BuildMetaDefaultObject::False
       } else {
         BuildMetaDefaultObject::Redirect
-      };
+      });
     }
 
     let exports_only = Self::exports_only(generator_options);
@@ -358,7 +357,7 @@ impl ParserAndGenerator for CssParserAndGenerator {
     _runtime: Option<&RuntimeSpec>,
   ) -> Result<RspackHashDigest> {
     let mut hasher = RspackHash::from(&compilation.options.output);
-    Self::es_module(css_generator_options(module.get_generator_options())).dyn_hash(&mut hasher);
+    Self::es_module(css_generator_options(module.get_generator_options())).hash(&mut hasher);
     Ok(hasher.digest(&compilation.options.output.hash_digest))
   }
 }

@@ -1,17 +1,17 @@
 assets by path *.wasm xx KiB
-  asset 5b1cf9eabe97b5fa.module.wasm xx bytes [emitted] [immutable]
-  asset d6fb27cc8ba95963.module.wasm xx bytes [emitted] [immutable]
-  asset dd6d2a216fd153df.module.wasm xx bytes [emitted] [immutable]
-  asset 1b3ca18da9ba7585.module.wasm xx bytes [emitted] [immutable]
-  asset d570402154524085.module.wasm xx bytes [emitted] [immutable]
-  asset 41d0d47cfd218be6.module.wasm xx bytes [emitted] [immutable]
+  asset c6465c09e1911104.module.wasm xx bytes [emitted] [immutable]
+  asset fd025fa1f36a6a43.module.wasm xx bytes [emitted] [immutable]
+  asset 0c64ec9dd07b06f0.module.wasm xx bytes [emitted] [immutable]
+  asset 71a35492ac92980f.module.wasm xx bytes [emitted] [immutable]
+  asset 7f0aea9774b3c998.module.wasm xx bytes [emitted] [immutable]
+  asset f97e5d2928ae2ebd.module.wasm xx bytes [emitted] [immutable]
 assets by path *.js xx KiB
   asset bundle.js xx KiB [emitted] (name: main)
   asset 549.bundle.js xx KiB [emitted]
   asset 440.bundle.js xx bytes [emitted] (id hint: vendors)
 chunk (runtime: main) 440.bundle.js (id hint: vendors) xx bytes [rendered] split chunk (cache group: defaultVendors)
   ./node_modules/env.js xx bytes [built] [code generated]
-chunk (runtime: main) 1b3ca18da9ba7585.module.wasm, 41d0d47cfd218be6.module.wasm, 549.bundle.js, 5b1cf9eabe97b5fa.module.wasm, d570402154524085.module.wasm, d6fb27cc8ba95963.module.wasm, dd6d2a216fd153df.module.wasm xx KiB (javascript) xx KiB (wasm) [rendered]
+chunk (runtime: main) 0c64ec9dd07b06f0.module.wasm, 549.bundle.js, 71a35492ac92980f.module.wasm, 7f0aea9774b3c998.module.wasm, c6465c09e1911104.module.wasm, f97e5d2928ae2ebd.module.wasm, fd025fa1f36a6a43.module.wasm xx KiB (javascript) xx KiB (wasm) [rendered]
   ./Q_rsqrt.wasm xx bytes (wasm) xx bytes (javascript) [dependent] [built] [code generated]
   ./duff.wasm xx bytes (wasm) xx bytes (javascript) [dependent] [built] [code generated]
   ./fact.wasm xx bytes (wasm) xx bytes (javascript) [dependent] [built] [code generated]

@@ -4135,11 +4135,18 @@ name = "rspack_hash"
 version = "0.101.0-beta.0"
 dependencies = [
  "base64-simd 0.8.0",
+ "lightningcss",
  "md4",
  "rspack_cacheable",
+ "rspack_collections",
+ "rspack_macros",
+ "rspack_sources",
  "rspack_util",
+ "serde",
  "sha2",
+ "simd-json",
  "smol_str",
+ "swc_config",
  "xxhash-rust",
 ]
 
@@ -4809,6 +4816,7 @@ dependencies = [
  "rspack_cacheable",
  "rspack_core",
  "rspack_error",
+ "rspack_hash",
  "rspack_util",
 ]
 

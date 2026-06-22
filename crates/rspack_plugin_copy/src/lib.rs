@@ -1,7 +1,6 @@
 use std::{
   borrow::Cow,
   fmt::Display,
-  hash::Hash,
   ops::DerefMut,
   path::{MAIN_SEPARATOR, Path, PathBuf},
   sync::{Arc, LazyLock, Mutex},
@@ -16,10 +15,12 @@ use rspack_core::{
   AssetInfo, AssetInfoRelated, Compilation, CompilationAsset, CompilationLogger,
   CompilationProcessAssets, Filename, GlobMatchOptions, Logger, PathData, Plugin,
   escape_glob_pattern, find_files_by_glob,
-  rspack_sources::{BoxSource, RawBufferSource, Source, SourceExt},
+  rspack_sources::{BoxSource, RawBufferSource, SourceExt},
 };
 use rspack_error::{Diagnostic, Error, Result};
-use rspack_hash::{HashDigest, HashFunction, HashSalt, RspackHash, RspackHashDigest};
+use rspack_hash::{
+  HashDigest, HashFunction, HashSalt, RspackHash, RspackHashDigest, RspackHashable,
+};
 use rspack_hook::{plugin, plugin_hook};
 use rspack_paths::{Utf8Path, Utf8PathBuf};
 use rspack_util::fx_hash::FxDashSet;
@@ -152,7 +153,7 @@ impl CopyRspackPlugin {
     salt: &HashSalt,
   ) -> RspackHashDigest {
     let mut hasher = RspackHash::with_salt(function, salt);
-    source.buffer().hash(&mut hasher);
+    source.hash(&mut hasher);
     hasher.digest(digest)
   }
 

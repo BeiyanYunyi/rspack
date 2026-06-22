@@ -1,13 +1,14 @@
 use std::{
   collections::hash_map::Entry,
-  hash::Hash,
   ops::{Deref, DerefMut},
   sync::atomic::AtomicU32,
 };
 
 use anymap::CloneAny;
 use rspack_collections::IdentifierMap;
-use rspack_hash::{HashDigest, HashFunction, HashSalt, RspackHash, RspackHashDigest};
+use rspack_hash::{
+  HashDigest, HashFunction, HashSalt, RspackHash, RspackHashDigest, RspackHashable,
+};
 use rspack_sources::BoxSource;
 use rspack_util::atom::Atom;
 use rustc_hash::{FxHashMap as HashMap, FxHashSet};
