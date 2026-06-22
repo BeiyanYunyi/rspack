@@ -444,7 +444,10 @@ impl EntryRuntime {
 
 impl RspackHashable for EntryRuntime {
   fn hash(&self, state: &mut RspackHash) {
-    self.to_string().hash(state);
+    match self {
+      EntryRuntime::String(s) => s.hash(state),
+      EntryRuntime::False => "false".hash(state),
+    }
   }
 }
 

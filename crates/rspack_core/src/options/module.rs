@@ -141,17 +141,23 @@ impl From<&str> for DynamicImportFetchPriority {
 
 impl fmt::Display for DynamicImportFetchPriority {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    match self {
-      DynamicImportFetchPriority::Low => write!(f, "low"),
-      DynamicImportFetchPriority::High => write!(f, "high"),
-      DynamicImportFetchPriority::Auto => write!(f, "auto"),
-    }
+    f.write_str(self.as_str())
   }
 }
 
 impl RspackHashable for DynamicImportFetchPriority {
   fn hash(&self, state: &mut RspackHash) {
-    self.to_string().hash(state);
+    self.as_str().hash(state);
+  }
+}
+
+impl DynamicImportFetchPriority {
+  fn as_str(&self) -> &'static str {
+    match self {
+      DynamicImportFetchPriority::Low => "low",
+      DynamicImportFetchPriority::High => "high",
+      DynamicImportFetchPriority::Auto => "auto",
+    }
   }
 }
 
@@ -852,16 +858,22 @@ pub enum DataUrlEncoding {
 
 impl fmt::Display for DataUrlEncoding {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    match self {
-      DataUrlEncoding::None => write!(f, ""),
-      DataUrlEncoding::Base64 => write!(f, "base64"),
-    }
+    f.write_str(self.as_str())
   }
 }
 
 impl RspackHashable for DataUrlEncoding {
   fn hash(&self, state: &mut RspackHash) {
-    self.to_string().hash(state);
+    self.as_str().hash(state);
+  }
+}
+
+impl DataUrlEncoding {
+  fn as_str(&self) -> &'static str {
+    match self {
+      DataUrlEncoding::None => "",
+      DataUrlEncoding::Base64 => "base64",
+    }
   }
 }
 

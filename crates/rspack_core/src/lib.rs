@@ -140,28 +140,34 @@ pub enum SourceType {
 
 impl std::fmt::Display for SourceType {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    match self {
-      SourceType::JavaScript => write!(f, "javascript"),
-      SourceType::Css => write!(f, "css"),
-      SourceType::CssUrl => write!(f, "css-url"),
-      SourceType::Wasm => write!(f, "wasm"),
-      SourceType::Asset => write!(f, "asset"),
-      SourceType::Expose => write!(f, "expose"),
-      SourceType::Remote => write!(f, "remote"),
-      SourceType::ShareInit => write!(f, "share-init"),
-      SourceType::ConsumeShared => write!(f, "consume-shared"),
-      SourceType::ShareContainerShared => write!(f, "share-container-shared"),
-      SourceType::Unknown => write!(f, "unknown"),
-      SourceType::CssImport => write!(f, "css-import"),
-      SourceType::Custom(source_type) => f.write_str(source_type),
-      SourceType::Runtime => write!(f, "runtime"),
-    }
+    f.write_str(self.as_str())
   }
 }
 
 impl RspackHashable for SourceType {
   fn hash(&self, state: &mut RspackHash) {
-    self.to_string().hash(state);
+    self.as_str().hash(state);
+  }
+}
+
+impl SourceType {
+  fn as_str(&self) -> &str {
+    match self {
+      SourceType::JavaScript => "javascript",
+      SourceType::Css => "css",
+      SourceType::CssUrl => "css-url",
+      SourceType::Wasm => "wasm",
+      SourceType::Asset => "asset",
+      SourceType::Expose => "expose",
+      SourceType::Remote => "remote",
+      SourceType::ShareInit => "share-init",
+      SourceType::ConsumeShared => "consume-shared",
+      SourceType::ShareContainerShared => "share-container-shared",
+      SourceType::Unknown => "unknown",
+      SourceType::CssImport => "css-import",
+      SourceType::Custom(source_type) => source_type,
+      SourceType::Runtime => "runtime",
+    }
   }
 }
 

@@ -22,13 +22,19 @@ pub enum RuntimeRequirementsDependencyMode {
 
 impl RspackHashable for RuntimeRequirementsDependencyMode {
   fn hash(&self, state: &mut RspackHash) {
-    self.to_string().hash(state);
+    self.as_str().hash(state);
   }
 }
 
 impl Display for RuntimeRequirementsDependencyMode {
   fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-    f.write_str(match self {
+    f.write_str(self.as_str())
+  }
+}
+
+impl RuntimeRequirementsDependencyMode {
+  fn as_str(&self) -> &'static str {
+    match self {
       RuntimeRequirementsDependencyMode::Normal => "normal",
       RuntimeRequirementsDependencyMode::Call => "call",
       RuntimeRequirementsDependencyMode::AddOnly => "add-only",
@@ -37,7 +43,7 @@ impl Display for RuntimeRequirementsDependencyMode {
       RuntimeRequirementsDependencyMode::UnsupportedRequireProperty => {
         "unsupported-require-property"
       }
-    })
+    }
   }
 }
 

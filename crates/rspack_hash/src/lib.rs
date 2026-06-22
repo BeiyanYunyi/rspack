@@ -288,8 +288,7 @@ impl Hasher for RspackHash {
 }
 
 #[cacheable]
-#[derive(Debug, Clone, Eq, RspackHashable)]
-#[rspack_hash(crate = crate)]
+#[derive(Debug, Clone, Eq)]
 pub struct RspackHashDigest {
   #[cacheable(with=AsPreset)]
   encoded: SmolStr,
@@ -342,6 +341,12 @@ impl RspackHashDigest {
   pub fn rendered(&self, length: usize) -> &str {
     let len = self.encoded.len().min(length);
     &self.encoded[..len]
+  }
+}
+
+impl RspackHashable for RspackHashDigest {
+  fn hash(&self, state: &mut RspackHash) {
+    RspackHashable::hash(self.encoded.as_str(), state);
   }
 }
 

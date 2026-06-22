@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[cacheable]
-#[derive(Debug, Clone, RspackHashable)]
+#[derive(Debug, Clone)]
 pub struct ConstDependency {
   pub range: DependencyRange,
   #[cacheable(with=AsRefStr)]
@@ -18,6 +18,14 @@ pub struct ConstDependency {
 impl ConstDependency {
   pub fn new(range: DependencyRange, content: Box<str>) -> Self {
     Self { range, content }
+  }
+}
+
+impl RspackHashable for ConstDependency {
+  fn hash(&self, state: &mut RspackHash) {
+    self.range.hash(state);
+    state.write(b"|");
+    self.content.hash(state);
   }
 }
 

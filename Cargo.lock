@@ -4135,6 +4135,7 @@ name = "rspack_hash"
 version = "0.101.0-beta.0"
 dependencies = [
  "base64-simd 0.8.0",
+ "itoa",
  "lightningcss",
  "md4",
  "rspack_cacheable",

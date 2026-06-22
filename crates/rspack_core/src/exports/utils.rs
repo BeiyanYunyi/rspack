@@ -191,17 +191,23 @@ pub enum ExportProvided {
 
 impl rspack_hash::RspackHashable for ExportProvided {
   fn hash(&self, state: &mut RspackHash) {
-    self.to_string().hash(state);
+    self.as_str().hash(state);
   }
 }
 
 impl Display for ExportProvided {
   fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-    f.write_str(match self {
+    f.write_str(self.as_str())
+  }
+}
+
+impl ExportProvided {
+  fn as_str(&self) -> &'static str {
+    match self {
       ExportProvided::Provided => "provided",
       ExportProvided::NotProvided => "not-provided",
       ExportProvided::Unknown => "unknown",
-    })
+    }
   }
 }
 
@@ -226,19 +232,25 @@ pub enum UsageState {
 
 impl rspack_hash::RspackHashable for UsageState {
   fn hash(&self, state: &mut RspackHash) {
-    self.to_string().hash(state);
+    self.as_str().hash(state);
   }
 }
 
 impl Display for UsageState {
   fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-    f.write_str(match self {
+    f.write_str(self.as_str())
+  }
+}
+
+impl UsageState {
+  fn as_str(&self) -> &'static str {
+    match self {
       UsageState::Unused => "unused",
       UsageState::OnlyPropertiesUsed => "only-properties-used",
       UsageState::NoInfo => "no-info",
       UsageState::Unknown => "unknown",
       UsageState::Used => "used",
-    })
+    }
   }
 }
 

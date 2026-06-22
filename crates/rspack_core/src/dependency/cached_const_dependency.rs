@@ -29,7 +29,7 @@ impl RspackHashable for CachedConstDependencyPlace {
 }
 
 #[cacheable]
-#[derive(Debug, Clone, RspackHashable)]
+#[derive(Debug, Clone)]
 pub struct CachedConstDependency {
   pub place: CachedConstDependencyPlace,
   pub identifier: Box<str>,
@@ -72,6 +72,18 @@ impl CachedConstDependency {
       identifier,
       content,
     }
+  }
+}
+
+impl RspackHashable for CachedConstDependency {
+  fn hash(&self, state: &mut RspackHash) {
+    self.place.hash(state);
+    self.identifier.hash(state);
+    match self.range {
+      Some(range) => range.hash(state),
+      None => state.write(b"null"),
+    }
+    self.content.hash(state);
   }
 }
 

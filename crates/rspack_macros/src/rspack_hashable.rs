@@ -1,4 +1,4 @@
-use proc_macro2::TokenStream;
+use proc_macro2::{Literal, TokenStream};
 use quote::quote;
 use syn::{
   Attribute, Data, DeriveInput, Error, Fields, Generics, Ident, Index, Path, Result, Type,
@@ -146,11 +146,11 @@ fn hash_fields(hash_crate: &Path, fields: &Fields) -> Result<TokenStream> {
       sort_fields(&mut fields)?;
       let fields = fields.into_iter().map(|(_, hash)| hash);
       Ok(quote! {
-        #hash_crate::RspackHashable::hash("{", state);
+        state.write(b"{");
         let mut is_first_rspack_hash_field = true;
         #(#fields)*
         let _ = is_first_rspack_hash_field;
-        #hash_crate::RspackHashable::hash("}", state);
+        state.write(b"}");
       })
     }
     Fields::Unnamed(fields) => {
@@ -181,16 +181,15 @@ fn hash_fields(hash_crate: &Path, fields: &Fields) -> Result<TokenStream> {
       sort_fields(&mut fields)?;
       let fields = fields.into_iter().map(|(_, hash)| hash);
       Ok(quote! {
-        #hash_crate::RspackHashable::hash("{", state);
+        state.write(b"{");
         let mut is_first_rspack_hash_field = true;
         #(#fields)*
         let _ = is_first_rspack_hash_field;
-        #hash_crate::RspackHashable::hash("}", state);
+        state.write(b"}");
       })
     }
     Fields::Unit => Ok(quote! {
-      #hash_crate::RspackHashable::hash("{", state);
-      #hash_crate::RspackHashable::hash("}", state);
+      state.write(b"{}");
     }),
   }
 }
@@ -238,14 +237,14 @@ fn hash_variant(
       let mut hashes = hashes.into_iter().flatten().collect::<Vec<_>>();
       sort_fields(&mut hashes)?;
       let hashes = hashes.into_iter().map(|(_, hash)| hash);
+      let variant_start = Literal::byte_string(format!("{variant_name}{{").as_bytes());
       Ok(quote! {
         #enum_ident::#variant_ident { #(#field_idents),* } => {
-          #hash_crate::RspackHashable::hash(#variant_name, state);
-          #hash_crate::RspackHashable::hash("{", state);
+          state.write(#variant_start);
           let mut is_first_rspack_hash_field = true;
           #(#hashes)*
           let _ = is_first_rspack_hash_field;
-          #hash_crate::RspackHashable::hash("}", state);
+          state.write(b"}");
         }
       })
     }
@@ -277,22 +276,25 @@ fn hash_variant(
       let mut hashes = hashes.into_iter().flatten().collect::<Vec<_>>();
       sort_fields(&mut hashes)?;
       let hashes = hashes.into_iter().map(|(_, hash)| hash);
+      let variant_start = Literal::byte_string(format!("{variant_name}{{").as_bytes());
       Ok(quote! {
         #enum_ident::#variant_ident(#(#bindings),*) => {
-          #hash_crate::RspackHashable::hash(#variant_name, state);
-          #hash_crate::RspackHashable::hash("{", state);
+          state.write(#variant_start);
           let mut is_first_rspack_hash_field = true;
           #(#hashes)*
           let _ = is_first_rspack_hash_field;
-          #hash_crate::RspackHashable::hash("}", state);
+          state.write(b"}");
         }
       })
     }
-    Fields::Unit => Ok(quote! {
-      #enum_ident::#variant_ident => {
-        #hash_crate::RspackHashable::hash(#variant_name, state);
-      }
-    }),
+    Fields::Unit => {
+      let variant_name = Literal::byte_string(variant_name.as_bytes());
+      Ok(quote! {
+        #enum_ident::#variant_ident => {
+          state.write(#variant_name);
+        }
+      })
+    }
   }
 }
 
@@ -303,13 +305,15 @@ fn hash_field(
   ty: &Type,
   options: &FieldOptions,
 ) -> TokenStream {
+  let first_key = Literal::byte_string(format!("{field_name}:").as_bytes());
+  let next_key = Literal::byte_string(format!(",{field_name}:").as_bytes());
   let hash_key = quote! {
-    if !is_first_rspack_hash_field {
-      #hash_crate::RspackHashable::hash(",", state);
+    if is_first_rspack_hash_field {
+      state.write(#first_key);
+    } else {
+      state.write(#next_key);
     }
     is_first_rspack_hash_field = false;
-    #hash_crate::RspackHashable::hash(#field_name, state);
-    #hash_crate::RspackHashable::hash(":", state);
   };
   if options.null_if_none {
     quote! {
@@ -320,7 +324,7 @@ fn hash_field(
         }
         None => {
           #hash_key
-          #hash_crate::RspackHashable::hash("null", state);
+          state.write(b"null");
         }
       }
     }

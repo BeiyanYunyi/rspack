@@ -355,17 +355,21 @@ impl From<&str> for BuildMetaExportsType {
 
 impl Display for BuildMetaExportsType {
   fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-    f.write_str(match self {
+    f.write_str(self.as_str())
+  }
+}
+
+impl BuildMetaExportsType {
+  fn as_str(&self) -> &'static str {
+    match self {
       BuildMetaExportsType::Unset => "unset",
       BuildMetaExportsType::Default => "default",
       BuildMetaExportsType::Namespace => "namespace",
       BuildMetaExportsType::Flagged => "flagged",
       BuildMetaExportsType::Dynamic => "dynamic",
-    })
+    }
   }
-}
 
-impl BuildMetaExportsType {
   pub fn description(&self) -> &'static str {
     match self {
       BuildMetaExportsType::Unset => "unknown exports (runtime-defined)",
@@ -387,12 +391,18 @@ pub enum ExportsType {
 
 impl Display for ExportsType {
   fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-    f.write_str(match self {
+    f.write_str(self.as_str())
+  }
+}
+
+impl ExportsType {
+  fn as_str(&self) -> &'static str {
+    match self {
       ExportsType::DefaultOnly => "default-only",
       ExportsType::Namespace => "namespace",
       ExportsType::DefaultWithNamed => "default-with-named",
       ExportsType::Dynamic => "dynamic",
-    })
+    }
   }
 }
 
@@ -408,11 +418,17 @@ pub enum BuildMetaDefaultObject {
 
 impl Display for BuildMetaDefaultObject {
   fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-    f.write_str(match self {
+    f.write_str(self.as_str())
+  }
+}
+
+impl BuildMetaDefaultObject {
+  fn as_str(&self) -> &'static str {
+    match self {
       BuildMetaDefaultObject::False => "false",
       BuildMetaDefaultObject::Redirect => "redirect",
       BuildMetaDefaultObject::RedirectWarn => "redirect-warn",
-    })
+    }
   }
 }
 
@@ -437,10 +453,16 @@ pub enum ModuleArgument {
 
 impl Display for ModuleArgument {
   fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-    f.write_str(match self {
+    f.write_str(self.as_str())
+  }
+}
+
+impl ModuleArgument {
+  fn as_str(&self) -> &'static str {
+    match self {
       ModuleArgument::Module => "module",
       ModuleArgument::RspackModule => "__webpack_module__",
-    })
+    }
   }
 }
 
@@ -455,10 +477,16 @@ pub enum ExportsArgument {
 
 impl Display for ExportsArgument {
   fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-    f.write_str(match self {
+    f.write_str(self.as_str())
+  }
+}
+
+impl ExportsArgument {
+  fn as_str(&self) -> &'static str {
+    match self {
       ExportsArgument::Exports => "exports",
       ExportsArgument::RspackExports => "__webpack_exports__",
-    })
+    }
   }
 }
 
@@ -549,31 +577,31 @@ impl RspackHashable for BuildMetaExportsType {
     if matches!(self, BuildMetaExportsType::Unset) {
       return;
     }
-    self.to_string().hash(state);
+    self.as_str().hash(state);
   }
 }
 
 impl RspackHashable for ExportsType {
   fn hash(&self, state: &mut RspackHash) {
-    self.to_string().hash(state);
+    self.as_str().hash(state);
   }
 }
 
 impl RspackHashable for BuildMetaDefaultObject {
   fn hash(&self, state: &mut RspackHash) {
-    self.to_string().hash(state);
+    self.as_str().hash(state);
   }
 }
 
 impl RspackHashable for ModuleArgument {
   fn hash(&self, state: &mut RspackHash) {
-    self.to_string().hash(state);
+    self.as_str().hash(state);
   }
 }
 
 impl RspackHashable for ExportsArgument {
   fn hash(&self, state: &mut RspackHash) {
-    self.to_string().hash(state);
+    self.as_str().hash(state);
   }
 }
 

@@ -188,15 +188,21 @@ pub enum WasmLoading {
 
 impl RspackHashable for WasmLoading {
   fn hash(&self, state: &mut RspackHash) {
-    self.to_string().hash(state);
+    self.as_str().hash(state);
   }
 }
 
 impl fmt::Display for WasmLoading {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    f.write_str(self.as_str())
+  }
+}
+
+impl WasmLoading {
+  fn as_str(&self) -> &str {
     match self {
-      WasmLoading::Enable(ty) => write!(f, "{ty}"),
-      WasmLoading::Disable => f.write_str("false"),
+      WasmLoading::Enable(ty) => ty.as_str(),
+      WasmLoading::Disable => "false",
     }
   }
 }
@@ -220,17 +226,23 @@ pub enum WasmLoadingType {
 
 impl RspackHashable for WasmLoadingType {
   fn hash(&self, state: &mut RspackHash) {
-    self.to_string().hash(state);
+    self.as_str().hash(state);
   }
 }
 
 impl fmt::Display for WasmLoadingType {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    f.write_str(match self {
+    f.write_str(self.as_str())
+  }
+}
+
+impl WasmLoadingType {
+  fn as_str(&self) -> &'static str {
+    match self {
       WasmLoadingType::Fetch => "fetch",
       WasmLoadingType::AsyncNode => "async-node",
       WasmLoadingType::Universal => "universal",
-    })
+    }
   }
 }
 

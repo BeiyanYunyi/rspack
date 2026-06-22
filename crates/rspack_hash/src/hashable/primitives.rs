@@ -42,7 +42,8 @@ macro_rules! impl_content_hash_for_integer {
     $(
       impl RspackHashable for $ty {
         fn hash(&self, state: &mut RspackHash) {
-          state.write(self.to_string().as_bytes());
+          let mut buffer = itoa::Buffer::new();
+          state.write(buffer.format(*self).as_bytes());
         }
       }
     )+

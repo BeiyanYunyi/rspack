@@ -256,13 +256,13 @@ pub enum InitFragmentStage {
 
 impl RspackHashable for InitFragmentStage {
   fn hash(&self, state: &mut RspackHash) {
-    self.to_string().hash(state);
+    self.as_str().hash(state);
   }
 }
 
-impl Display for InitFragmentStage {
-  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-    f.write_str(match self {
+impl InitFragmentStage {
+  fn as_str(self) -> &'static str {
+    match self {
       InitFragmentStage::StageConstants => "constants",
       InitFragmentStage::StageAsyncBoundary => "async-boundary",
       InitFragmentStage::StageESMExports => "esm-exports",
@@ -270,7 +270,13 @@ impl Display for InitFragmentStage {
       InitFragmentStage::StageProvides => "provides",
       InitFragmentStage::StageAsyncDependencies => "async-dependencies",
       InitFragmentStage::StageAsyncESMImports => "async-esm-imports",
-    })
+    }
+  }
+}
+
+impl Display for InitFragmentStage {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    f.write_str(self.as_str())
   }
 }
 
