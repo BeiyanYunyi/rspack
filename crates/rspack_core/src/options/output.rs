@@ -17,7 +17,7 @@ use rspack_paths::Utf8PathBuf;
 use rspack_util::allocative;
 
 use super::CleanOptions;
-use crate::{Chunk, ChunkGroupByUkey, ChunkKind, Compilation, Filename};
+use crate::{Chunk, ChunkGroupByUkey, ChunkKind, ChunkUkey, Compilation, Filename};
 
 #[derive(Debug)]
 pub enum PathInfo {
@@ -221,7 +221,7 @@ impl fmt::Display for CrossOriginLoading {
   }
 }
 
-#[derive(Default, Clone, Copy, Debug)]
+#[derive(Default, Clone, Copy)]
 pub struct PathData<'a> {
   pub filename: Option<&'a str>,
   pub chunk_name: Option<&'a str>,
@@ -233,6 +233,33 @@ pub struct PathData<'a> {
   pub runtime: Option<&'a str>,
   pub url: Option<&'a str>,
   pub id: Option<&'a str>,
+  /// The ukey of the chunk this path is being computed for, if any.
+  ///
+  /// Together with [`PathData::compilation`] this lets the napi layer hand a
+  /// real `Chunk` instance to a JS `filename` function. It is intentionally
+  /// excluded from the `Debug` impl below to avoid recursively printing the
+  /// whole compilation.
+  pub chunk_ukey: Option<ChunkUkey>,
+  /// The compilation that owns the chunk, injected by `Compilation::get_path*`.
+  pub compilation: Option<&'a Compilation>,
+}
+
+impl std::fmt::Debug for PathData<'_> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("PathData")
+      .field("filename", &self.filename)
+      .field("chunk_name", &self.chunk_name)
+      .field("chunk_hash", &self.chunk_hash)
+      .field("chunk_id", &self.chunk_id)
+      .field("module_id", &self.module_id)
+      .field("hash", &self.hash)
+      .field("content_hash", &self.content_hash)
+      .field("runtime", &self.runtime)
+      .field("url", &self.url)
+      .field("id", &self.id)
+      .field("chunk_ukey", &self.chunk_ukey)
+      .finish_non_exhaustive()
+  }
 }
 
 static MATCH_ID_REGEX: LazyLock<Regex> =
@@ -284,6 +311,16 @@ impl<'a> PathData<'a> {
 
   pub fn chunk_id_optional(mut self, v: Option<&'a str>) -> Self {
     self.chunk_id = v;
+    self
+  }
+
+  pub fn chunk_ukey(mut self, v: ChunkUkey) -> Self {
+    self.chunk_ukey = Some(v);
+    self
+  }
+
+  pub fn compilation(mut self, v: &'a Compilation) -> Self {
+    self.compilation = Some(v);
     self
   }
 

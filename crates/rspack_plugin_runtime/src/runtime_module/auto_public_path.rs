@@ -52,6 +52,7 @@ impl RuntimeModule for AutoPublicPathRuntimeModule {
       .get_path(
         &filename,
         PathData::default()
+          .chunk_ukey(chunk.ukey())
           .chunk_id_optional(chunk.id().map(|id| id.as_str()))
           .chunk_hash_optional(chunk.rendered_hash(
             &compilation.chunk_hashes_artifact,

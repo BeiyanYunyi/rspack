@@ -1029,6 +1029,26 @@ export interface JsPathDataChunkLike {
   id?: string
 }
 
+/**
+ * Outbound `PathData` handed to a JS `filename` function.
+ *
+ * Unlike [`JsPathData`] (which is also accepted *from* JS via
+ * `compilation.getPath`), `chunk` here is a real `Chunk` instance whenever the
+ * computation is associated with a chunk, so JS can call methods such as
+ * `groupsIterable` / `getEntryOptions` on it. When no chunk instance is
+ * available it falls back to the plain `{ name, id, hash }` shape, matching the
+ * existing `Chunk | ChunkPathData` type.
+ */
+export interface JsRenderPathData {
+  filename?: string
+  hash?: string
+  contentHash?: string
+  runtime?: string
+  url?: string
+  id?: string
+  chunk?: Chunk | JsPathDataChunkLike
+}
+
 export interface JsResolveData {
   request: string
   context: string

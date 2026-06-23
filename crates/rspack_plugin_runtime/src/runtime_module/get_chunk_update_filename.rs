@@ -42,6 +42,7 @@ impl RuntimeModule for GetChunkUpdateFilenameRuntimeModule {
         .get_path(
           &compilation.options.output.hot_update_chunk_filename,
           PathData::default()
+            .chunk_ukey(chunk.ukey())
             .chunk_hash_optional(chunk.rendered_hash(
               &compilation.chunk_hashes_artifact,
               compilation.options.output.hash_digest_length,

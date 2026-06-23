@@ -9,11 +9,11 @@ use rspack_core::{Filename, FilenameFn, LocalFilenameFn, PathData, PublicPath};
 
 use crate::{
   asset::AssetInfo, compiler_scoped_tsfn::CompilerScopedTsFnHandle as ThreadsafeFunction,
-  path_data::JsPathData,
+  path_data::JsRenderPathData,
 };
 
 type FilenameValue =
-  Either<String, ThreadsafeFunction<FnArgs<(JsPathData, Option<AssetInfo>)>, String>>;
+  Either<String, ThreadsafeFunction<FnArgs<(JsRenderPathData, Option<AssetInfo>)>, String>>;
 
 /// A js filename value. Either a string or a function
 #[derive(Debug)]
@@ -73,7 +73,7 @@ impl From<JsFilename> for PublicPath {
 }
 
 pub type FilenameTsfn = Arc<
-  dyn Fn(JsPathData, Option<AssetInfo>) -> BoxFuture<'static, rspack_error::Result<String>>
+  dyn Fn(JsRenderPathData, Option<AssetInfo>) -> BoxFuture<'static, rspack_error::Result<String>>
     + Sync
     + Send,
 >;
@@ -95,7 +95,7 @@ impl LocalFilenameFn for ThreadSafeFilenameFn {
     asset_info: Option<&rspack_core::AssetInfo>,
   ) -> rspack_error::Result<String> {
     (self.0)(
-      JsPathData::from_path_data(*path_data),
+      JsRenderPathData::from_path_data(*path_data),
       asset_info.cloned().map(AssetInfo::from),
     )
     .await
