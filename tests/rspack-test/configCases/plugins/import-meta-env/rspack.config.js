@@ -6,6 +6,9 @@ const { DefinePlugin, EnvironmentPlugin } = require('@rspack/core');
 module.exports = {
   // Test 1: NODE_ENV from mode (WebpackOptionsApply)
   mode: 'production',
+  experiments: {
+    env: true,
+  },
   plugins: [
     // Test 2: EnvironmentPlugin
     new EnvironmentPlugin({

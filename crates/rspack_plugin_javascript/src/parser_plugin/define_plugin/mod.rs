@@ -105,12 +105,14 @@ async fn collect_import_meta_env_definitions(
   _params: &mut CompilationParams,
 ) -> Result<()> {
   compilation.extend_diagnostics(self.walk_data.diagnostics.clone());
-  let mut definitions = IMPORT_META_ENV_DEFINITIONS_MAP
-    .entry(compilation.id())
-    .or_default();
-  for (key, value) in &self.walk_data.import_meta_env_definitions {
-    definitions.definitions.insert(key.clone(), value.clone());
-    definitions.serialized = None;
+  if compilation.options.experiments.env {
+    let mut definitions = IMPORT_META_ENV_DEFINITIONS_MAP
+      .entry(compilation.id())
+      .or_default();
+    for (key, value) in &self.walk_data.import_meta_env_definitions {
+      definitions.definitions.insert(key.clone(), value.clone());
+      definitions.serialized = None;
+    }
   }
   for (key, value) in self.walk_data.tiling_definitions.iter() {
     let cache_key = format!("{VALUE_DEP_PREFIX}{key}");
@@ -136,6 +138,10 @@ async fn finalize_import_meta_env_definitions(
   compilation: &mut Compilation,
   _params: &mut CompilationParams,
 ) -> Result<()> {
+  if !compilation.options.experiments.env {
+    return Ok(());
+  }
+
   let mut state = IMPORT_META_ENV_DEFINITIONS_MAP
     .entry(compilation.id())
     .or_default();

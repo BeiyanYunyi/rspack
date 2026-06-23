@@ -3025,6 +3025,12 @@ export type Experiments = {
    */
   deferImport?: boolean;
   /**
+   * Enable environment variable conveniences, including process.env destructuring
+   * and import.meta.env object replacement.
+   * @default false
+   */
+  env?: boolean;
+  /**
    * Enable source phase import feature
    * @default false
    */

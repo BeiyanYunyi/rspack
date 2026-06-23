@@ -11,6 +11,7 @@ module.exports = {
     }),
   ],
   experiments: {
+    env: true,
     outputModule: true,
   },
   output: {

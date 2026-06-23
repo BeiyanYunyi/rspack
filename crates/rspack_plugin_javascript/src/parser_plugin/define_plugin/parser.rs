@@ -67,6 +67,10 @@ impl DefineParserPlugin {
       .get(for_name)
       .or_else(|| self.walk_data.typeof_define_record.get(for_name))
   }
+
+  fn experiments_env_enabled(&self, parser: &JavascriptParser) -> bool {
+    parser.compiler_options.experiments.env
+  }
 }
 
 #[rspack_macros::implemented_javascript_parser_hooks]
@@ -189,10 +193,11 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for DefineParserPlugin {
           .walk_data
           .object_define_record
           .contains_key(info.name.as_str())
-        || self
-          .walk_data
-          .destructuring_define_record
-          .contains_key(info.name.as_str()))
+        || (self.experiments_env_enabled(parser)
+          && self
+            .walk_data
+            .destructuring_define_record
+            .contains_key(info.name.as_str())))
     {
       return Some(true);
     }
@@ -231,7 +236,8 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for DefineParserPlugin {
         span.real_hi(),
         for_name,
       );
-    } else if let Some(record) = self.walk_data.destructuring_define_record.get(for_name)
+    } else if self.experiments_env_enabled(parser)
+      && let Some(record) = self.walk_data.destructuring_define_record.get(for_name)
       && let Some(on_expression) = &record.on_expression
     {
       let span = expr.span;
