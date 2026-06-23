@@ -1,5 +1,4 @@
 use rspack_collections::Identifier;
-use rspack_sources::Source;
 use rspack_util::{
   asset_condition::{AssetCondition, AssetConditions},
   atom::Atom,
@@ -47,11 +46,5 @@ impl RspackHashable for AssetConditions {
         value.hash(state);
       }
     }
-  }
-}
-
-impl RspackHashable for dyn Source {
-  fn hash(&self, state: &mut RspackHash) {
-    state.write(self.source().as_bytes());
   }
 }

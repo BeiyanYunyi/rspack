@@ -296,7 +296,7 @@ impl NormalModule {
     if let Some(error) = self.first_error() {
       error.message.hash(&mut hasher);
     } else if let Some(s) = &self.source {
-      s.hash(&mut hasher);
+      std::hash::Hash::hash(s, &mut hasher);
     }
     "meta".hash(&mut hasher);
     build_meta.hash(&mut hasher);

@@ -17,7 +17,7 @@ use rspack_core::{
   rspack_sources::{BoxSource, RawStringSource, SourceExt, SourceValue},
 };
 use rspack_error::{Result, ToStringResultToRspackResultExt};
-use rspack_hash::{RspackHash, RspackHashable};
+use rspack_hash::RspackHash;
 use rspack_hook::{plugin, plugin_hook};
 use rspack_util::fx_hash::FxDashMap;
 use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet, FxHasher};
@@ -217,7 +217,7 @@ async fn inner_impl(compilation: &mut Compilation) -> Result<()> {
               } else {
                 let mut hasher = RspackHash::from(&compilation.options.output);
                 for asset_content in asset_contents {
-                  asset_content.hash(&mut hasher);
+                  hasher.write(&asset_content.buffer());
                 }
                 let new_hash = hasher.digest(&compilation.options.output.hash_digest);
 

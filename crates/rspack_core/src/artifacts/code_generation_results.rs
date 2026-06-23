@@ -168,7 +168,7 @@ impl CodeGenerationResult {
     let mut hasher = RspackHash::with_salt(hash_function, hash_salt);
     for (source_type, source) in self.inner.as_ref() {
       source_type.hash(&mut hasher);
-      source.hash(&mut hasher);
+      std::hash::Hash::hash(source, &mut hasher);
     }
     self.chunk_init_fragments.hash(&mut hasher);
     self.runtime_requirements.hash(&mut hasher);
