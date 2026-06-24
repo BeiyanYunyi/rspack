@@ -16,6 +16,27 @@ use crate::{
 
 type CreateDependency = fn(Atom, DependencyRange) -> BoxDependency;
 
+fn is_import_meta_hot(for_name: &str) -> bool {
+  matches!(
+    for_name,
+    expr_name::IMPORT_META_HOT | expr_name::IMPORT_META_HOT_ALIAS
+  )
+}
+
+fn is_import_meta_hot_accept(for_name: &str) -> bool {
+  matches!(
+    for_name,
+    expr_name::IMPORT_META_HOT_ACCEPT | expr_name::IMPORT_META_HOT_ALIAS_ACCEPT
+  )
+}
+
+fn is_import_meta_hot_decline(for_name: &str) -> bool {
+  matches!(
+    for_name,
+    expr_name::IMPORT_META_HOT_DECLINE | expr_name::IMPORT_META_HOT_ALIAS_DECLINE
+  )
+}
+
 fn extract_deps(
   parser: &mut JavascriptParser,
   call_expr: &CallExpr,
@@ -211,9 +232,9 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for ImportMetaHotReplacementParserPl
     start: u32,
     end: u32,
   ) -> Option<crate::utils::eval::BasicEvaluatedExpression<'p>> {
-    if for_name == expr_name::IMPORT_META_HOT {
+    if is_import_meta_hot(for_name) {
       Some(eval::evaluate_to_identifier(
-        expr_name::IMPORT_META_HOT.into(),
+        for_name.into(),
         expr_name::IMPORT_META.into(),
         Some(true),
         start,
@@ -230,7 +251,7 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for ImportMetaHotReplacementParserPl
     expr: &MemberExpr,
     for_name: &str,
   ) -> Option<bool> {
-    if for_name == expr_name::IMPORT_META_HOT {
+    if is_import_meta_hot(for_name) {
       parser.create_hmr_expression_handler(expr.span());
       Some(true)
     } else {
@@ -244,11 +265,11 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for ImportMetaHotReplacementParserPl
     call_expr: &CallExpr,
     for_name: &str,
   ) -> Option<bool> {
-    if for_name == expr_name::IMPORT_META_HOT_ACCEPT {
+    if is_import_meta_hot_accept(for_name) {
       parser.create_accept_handler(call_expr, |request, range| {
         Box::new(ImportMetaHotAcceptDependency::new(request, range))
       })
-    } else if for_name == expr_name::IMPORT_META_HOT_DECLINE {
+    } else if is_import_meta_hot_decline(for_name) {
       parser.create_decline_handler(call_expr, |request, range| {
         Box::new(ImportMetaHotDeclineDependency::new(request, range))
       })
