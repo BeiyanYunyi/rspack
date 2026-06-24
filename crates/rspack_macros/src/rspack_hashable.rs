@@ -11,11 +11,19 @@ struct TypeOptions {
   json: bool,
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 struct FieldOptions {
   skip: bool,
   order: Option<usize>,
   null_if_none: bool,
+}
+
+struct FieldHash {
+  order: usize,
+  field_name: String,
+  target: TokenStream,
+  ty: Type,
+  options: FieldOptions,
 }
 
 pub fn expand_rspack_hashable_derive(input: DeriveInput) -> Result<TokenStream> {
@@ -130,28 +138,19 @@ fn hash_fields(hash_crate: &Path, fields: &Fields) -> Result<TokenStream> {
             return Ok(None);
           };
           let field_name = ident.to_string();
-          let hash = hash_field(
-            hash_crate,
-            &quote! {
+          Ok(Some(FieldHash {
+            order: options.order.unwrap_or(index),
+            field_name,
+            target: quote! {
               &self.#ident
             },
-            &field_name,
-            &field.ty,
-            &options,
-          );
-          Ok(Some((options.order.unwrap_or(index), hash)))
+            ty: field.ty.clone(),
+            options,
+          }))
         })
         .collect::<Result<Vec<_>>>()?;
       let mut fields = fields.into_iter().flatten().collect::<Vec<_>>();
-      sort_fields(&mut fields)?;
-      let fields = fields.into_iter().map(|(_, hash)| hash);
-      Ok(quote! {
-        state.write(b"{");
-        let mut is_first_rspack_hash_field = true;
-        #(#fields)*
-        let _ = is_first_rspack_hash_field;
-        state.write(b"}");
-      })
+      hash_fields_body(hash_crate, &mut fields, "{")
     }
     Fields::Unnamed(fields) => {
       let fields = fields
@@ -165,28 +164,19 @@ fn hash_fields(hash_crate: &Path, fields: &Fields) -> Result<TokenStream> {
           }
           let field_index = Index::from(index);
           let field_name = index.to_string();
-          let hash = hash_field(
-            hash_crate,
-            &quote! {
+          Ok(Some(FieldHash {
+            order: options.order.unwrap_or(index),
+            field_name,
+            target: quote! {
               &self.#field_index
             },
-            &field_name,
-            &field.ty,
-            &options,
-          );
-          Ok(Some((options.order.unwrap_or(index), hash)))
+            ty: field.ty.clone(),
+            options,
+          }))
         })
         .collect::<Result<Vec<_>>>()?;
       let mut fields = fields.into_iter().flatten().collect::<Vec<_>>();
-      sort_fields(&mut fields)?;
-      let fields = fields.into_iter().map(|(_, hash)| hash);
-      Ok(quote! {
-        state.write(b"{");
-        let mut is_first_rspack_hash_field = true;
-        #(#fields)*
-        let _ = is_first_rspack_hash_field;
-        state.write(b"}");
-      })
+      hash_fields_body(hash_crate, &mut fields, "{")
     }
     Fields::Unit => Ok(quote! {
       state.write(b"{}");
@@ -224,27 +214,20 @@ fn hash_variant(
             return Ok(None);
           }
           let field_name = ident.to_string();
-          let hash = hash_field(
-            hash_crate,
-            &quote! { #ident },
-            &field_name,
-            &field.ty,
-            &options,
-          );
-          Ok(Some((options.order.unwrap_or(index), hash)))
+          Ok(Some(FieldHash {
+            order: options.order.unwrap_or(index),
+            field_name,
+            target: quote! { #ident },
+            ty: field.ty.clone(),
+            options,
+          }))
         })
         .collect::<Result<Vec<_>>>()?;
       let mut hashes = hashes.into_iter().flatten().collect::<Vec<_>>();
-      sort_fields(&mut hashes)?;
-      let hashes = hashes.into_iter().map(|(_, hash)| hash);
-      let variant_start = Literal::byte_string(format!("{variant_name}{{").as_bytes());
+      let body = hash_fields_body(hash_crate, &mut hashes, &format!("{variant_name}{{"))?;
       Ok(quote! {
         #enum_ident::#variant_ident { #(#field_idents),* } => {
-          state.write(#variant_start);
-          let mut is_first_rspack_hash_field = true;
-          #(#hashes)*
-          let _ = is_first_rspack_hash_field;
-          state.write(b"}");
+          #body
         }
       })
     }
@@ -263,27 +246,20 @@ fn hash_variant(
             return Ok(None);
           }
           let field_name = index.to_string();
-          let hash = hash_field(
-            hash_crate,
-            &quote! { #ident },
-            &field_name,
-            &field.ty,
-            &options,
-          );
-          Ok(Some((options.order.unwrap_or(index), hash)))
+          Ok(Some(FieldHash {
+            order: options.order.unwrap_or(index),
+            field_name,
+            target: quote! { #ident },
+            ty: field.ty.clone(),
+            options,
+          }))
         })
         .collect::<Result<Vec<_>>>()?;
       let mut hashes = hashes.into_iter().flatten().collect::<Vec<_>>();
-      sort_fields(&mut hashes)?;
-      let hashes = hashes.into_iter().map(|(_, hash)| hash);
-      let variant_start = Literal::byte_string(format!("{variant_name}{{").as_bytes());
+      let body = hash_fields_body(hash_crate, &mut hashes, &format!("{variant_name}{{"))?;
       Ok(quote! {
         #enum_ident::#variant_ident(#(#bindings),*) => {
-          state.write(#variant_start);
-          let mut is_first_rspack_hash_field = true;
-          #(#hashes)*
-          let _ = is_first_rspack_hash_field;
-          state.write(b"}");
+          #body
         }
       })
     }
@@ -298,14 +274,82 @@ fn hash_variant(
   }
 }
 
-fn hash_field(
+fn hash_fields_body(
   hash_crate: &Path,
-  target: &TokenStream,
-  field_name: &str,
-  ty: &Type,
-  options: &FieldOptions,
-) -> TokenStream {
-  let first_key = Literal::byte_string(format!("{field_name}:").as_bytes());
+  fields: &mut [FieldHash],
+  start: &str,
+) -> Result<TokenStream> {
+  sort_fields(fields)?;
+
+  if fields.is_empty() {
+    let empty = Literal::byte_string(format!("{start}}}").as_bytes());
+    return Ok(quote! {
+      state.write(#empty);
+    });
+  }
+
+  if fields.iter().any(|field| field.is_conditionally_skipped()) {
+    let empty = Literal::byte_string(format!("{start}}}").as_bytes());
+    let fields = fields
+      .iter()
+      .map(|field| hash_field_dynamic(hash_crate, field, start));
+    return Ok(quote! {
+      let mut is_first_rspack_hash_field = true;
+      #(#fields)*
+      if is_first_rspack_hash_field {
+        state.write(#empty);
+      } else {
+        state.write(b"}");
+      }
+    });
+  }
+
+  let fields = fields.iter().enumerate().map(|(index, field)| {
+    let prefix = if index == 0 {
+      format!("{start}{}:", field.field_name)
+    } else {
+      format!(",{}:", field.field_name)
+    };
+    hash_field_static(hash_crate, field, &prefix)
+  });
+
+  Ok(quote! {
+    #(#fields)*
+    state.write(b"}");
+  })
+}
+
+fn hash_field_static(hash_crate: &Path, field: &FieldHash, prefix: &str) -> TokenStream {
+  let target = &field.target;
+  if field.options.null_if_none {
+    let null = Literal::byte_string(format!("{prefix}null").as_bytes());
+    let prefix = Literal::byte_string(prefix.as_bytes());
+    quote! {
+      match #target {
+        Some(value) => {
+          state.write(#prefix);
+          #hash_crate::RspackHashable::hash(value, state);
+        }
+        None => {
+          state.write(#null);
+        }
+      }
+    }
+  } else {
+    let prefix = Literal::byte_string(prefix.as_bytes());
+    quote! {
+      state.write(#prefix);
+      #hash_crate::RspackHashable::hash(#target, state);
+    }
+  }
+}
+
+fn hash_field_dynamic(hash_crate: &Path, field: &FieldHash, start: &str) -> TokenStream {
+  let target = &field.target;
+  let field_name = &field.field_name;
+  let ty = &field.ty;
+  let options = &field.options;
+  let first_key = Literal::byte_string(format!("{start}{field_name}:").as_bytes());
   let next_key = Literal::byte_string(format!(",{field_name}:").as_bytes());
   let hash_key = quote! {
     if is_first_rspack_hash_field {
@@ -343,6 +387,12 @@ fn hash_field(
   }
 }
 
+impl FieldHash {
+  fn is_conditionally_skipped(&self) -> bool {
+    is_option_type(&self.ty) && !self.options.null_if_none
+  }
+}
+
 fn is_option_type(ty: &Type) -> bool {
   let Type::Path(path) = ty else {
     return false;
@@ -354,12 +404,12 @@ fn is_option_type(ty: &Type) -> bool {
     .is_some_and(|segment| segment.ident == "Option")
 }
 
-fn sort_fields(fields: &mut [(usize, TokenStream)]) -> Result<()> {
-  fields.sort_by_key(|(order, _)| *order);
+fn sort_fields(fields: &mut [FieldHash]) -> Result<()> {
+  fields.sort_by_key(|field| field.order);
   for window in fields.windows(2) {
-    if window[0].0 == window[1].0 {
+    if window[0].order == window[1].order {
       return Err(Error::new_spanned(
-        &window[1].1,
+        &window[1].target,
         "duplicate rspack_hash field order",
       ));
     }
